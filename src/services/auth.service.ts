@@ -1,5 +1,21 @@
 import api from '@/lib/axios';
 
+export interface Permission {
+  key: string;
+  description: string;
+  grantedAt: string;
+}
+
+export interface CompanyMembership {
+  id: string;
+  name: string;
+  slug: string;
+  logo?: string;
+  status: 'ACTIVE' | 'SUSPENDED';
+  roles: string[];
+  permissions: string[];
+}
+
 export interface User {
   id: string;
   email: string;
@@ -7,6 +23,9 @@ export interface User {
   phone?: string;
   avatar?: string;
   emailVerified?: boolean;
+  isPlatformAdmin?: boolean;
+  globalPermissions?: Permission[];
+  companies?: CompanyMembership[];
 }
 
 export interface LoginCredentials {
