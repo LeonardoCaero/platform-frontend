@@ -11,6 +11,10 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import TimeTracker from "./pages/TimeTracker";
 import Profile from "./pages/Profile";
+import Companies from "./pages/Companies";
+import CreateCompany from "./pages/CreateCompany";
+import CompanyDetail from "./pages/CompanyDetail";
+import EditCompany from "./pages/EditCompany";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +52,38 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/companies"
+                element={
+                  <ProtectedRoute>
+                    <Companies />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/companies/new"
+                element={
+                  <ProtectedRoute>
+                    <CreateCompany />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/companies/:id"
+                element={
+                  <ProtectedRoute>
+                    <CompanyDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/companies/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <EditCompany />
                   </ProtectedRoute>
                 }
               />

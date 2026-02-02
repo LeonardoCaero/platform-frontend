@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, User, Package } from 'lucide-react';
+import { Clock, User, Package, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ModuleCardProps {

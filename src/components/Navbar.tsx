@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, LayoutDashboard, Palette } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export function Navbar() {
@@ -44,6 +44,12 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:gap-2">
+            <Button variant="ghost" asChild>
+              <Link to="/companies" className="flex items-center gap-2">
+                <Building2 className="h-4 w-4" />
+                Companies
+              </Link>
+            </Button>
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -102,6 +108,22 @@ export function Navbar() {
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
             </div>
+            <Link
+              to="/companies"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Building2 className="h-4 w-4" />
+              Companies
+            </Link>
+            <Link
+              to="/time-tracker"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Clock className="h-4 w-4" />
+              Time Tracker
+            </Link>
             <Link
               to="/profile"
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
