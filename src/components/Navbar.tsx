@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { CompanySelector } from '@/components/CompanySelector';
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -41,6 +42,11 @@ export function Navbar() {
             <LayoutDashboard className="h-6 w-6 text-primary" />
             <span className="text-xl font-semibold text-foreground">Dashboard</span>
           </Link>
+
+          {/* Company Selector - Center */}
+          <div className="hidden md:flex flex-1 justify-center px-4">
+            <CompanySelector />
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex md:items-center md:gap-2">
@@ -96,6 +102,10 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="border-t md:hidden">
           <div className="space-y-1 px-4 py-3">
+            {/* Company Selector Mobile */}
+            <div className="pb-3 border-b">
+              <CompanySelector />
+            </div>
             <div className="flex items-center gap-3 py-2">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={user?.avatar} alt={user?.fullName} />
