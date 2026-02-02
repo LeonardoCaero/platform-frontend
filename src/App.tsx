@@ -17,6 +17,7 @@ import CompanyDetail from "./pages/CompanyDetail";
 import EditCompany from "./pages/EditCompany";
 import RequestCompany from "./pages/RequestCompany";
 import MyRequests from "./pages/MyRequests";
+import AdminCompanyRequests from "./pages/AdminCompanyRequests";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -102,6 +103,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <MyRequests />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/company-requests"
+                element={
+                  <ProtectedRoute>
+                    <AdminCompanyRequests />
                   </ProtectedRoute>
                 }
               />

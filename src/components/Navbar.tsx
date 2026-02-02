@@ -10,12 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock, ShieldAlert } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CompanySelector } from '@/components/CompanySelector';
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, isPlatformAdmin } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -56,6 +56,14 @@ export function Navbar() {
                 Companies
               </Link>
             </Button>
+            {isPlatformAdmin && (
+              <Button variant="ghost" asChild>
+                <Link to="/admin/company-requests" className="flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  Admin Panel
+                </Link>
+              </Button>
+            )}
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -126,6 +134,16 @@ export function Navbar() {
               <Building2 className="h-4 w-4" />
               Companies
             </Link>
+            {isPlatformAdmin && (
+              <Link
+                to="/admin/company-requests"
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <ShieldAlert className="h-4 w-4" />
+                Admin Panel
+              </Link>
+            )}
             <Link
               to="/time-tracker"
               className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
