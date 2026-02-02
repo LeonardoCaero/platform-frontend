@@ -15,6 +15,8 @@ import Companies from "./pages/Companies";
 import CreateCompany from "./pages/CreateCompany";
 import CompanyDetail from "./pages/CompanyDetail";
 import EditCompany from "./pages/EditCompany";
+import RequestCompany from "./pages/RequestCompany";
+import MyRequests from "./pages/MyRequests";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +86,22 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <EditCompany />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/request-company"
+                element={
+                  <ProtectedRoute>
+                    <RequestCompany />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-requests"
+                element={
+                  <ProtectedRoute>
+                    <MyRequests />
                   </ProtectedRoute>
                 }
               />
