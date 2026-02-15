@@ -28,16 +28,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load selected company from localStorage
   useEffect(() => {
+    if (!user) {
+      setSelectedCompanyState(null);
+      return;
+    }
+
     const savedCompanySlug = localStorage.getItem('selectedCompanySlug');
-    if (savedCompanySlug && user?.companies) {
+    if (savedCompanySlug && user.companies) {
       const company = user.companies.find(c => c.slug === savedCompanySlug);
       if (company) {
         setSelectedCompanyState(company);
       } else if (user.companies.length > 0) {
         setSelectedCompanyState(user.companies[0]);
+      } else {
+        setSelectedCompanyState(null);
       }
-    } else if (user?.companies && user.companies.length > 0) {
+    } else if (user.companies && user.companies.length > 0) {
       setSelectedCompanyState(user.companies[0]);
+    } else {
+      setSelectedCompanyState(null);
     }
   }, [user]);
 
@@ -96,7 +105,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await authService.login({ email, password });
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
-    setUser(response.user);
+    
+    await refreshUser();
+    
     toast({
       title: 'Welcome back!',
       description: `Logged in as ${response.user.email}`,
@@ -121,8 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if logout API fails, clear local state
     }
     setUser(null);
+    setSelectedCompanyState(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('selectedCompanySlug');
     toast({
       title: 'Logged out',
       description: 'See you next time!',

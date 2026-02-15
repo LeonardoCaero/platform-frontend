@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminCompanyRequests() {
-  const { isPlatformAdmin } = useAuth();
+  const { isPlatformAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [requests, setRequests] = useState<CompanyRequest[]>([]);
@@ -41,6 +41,9 @@ export default function AdminCompanyRequests() {
 
   // Redirect if not admin
   useEffect(() => {
+
+    if (authLoading) return;
+    
     if (!isPlatformAdmin) {
       toast({
         title: 'Access Denied',
@@ -49,7 +52,7 @@ export default function AdminCompanyRequests() {
       });
       navigate('/dashboard');
     }
-  }, [isPlatformAdmin, navigate, toast]);
+  }, [isPlatformAdmin, navigate, toast, authLoading]);
 
   const loadRequests = async () => {
     setIsLoading(true);
@@ -97,6 +100,16 @@ export default function AdminCompanyRequests() {
 
   if (!isPlatformAdmin) {
     return null;
+  }
+
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (

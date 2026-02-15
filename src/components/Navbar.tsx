@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock, ShieldAlert } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock, ShieldAlert, Key, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CompanySelector } from '@/components/CompanySelector';
 
@@ -56,13 +56,34 @@ export function Navbar() {
                 Companies
               </Link>
             </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/my-permission-requests" className="flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                My Requests
+              </Link>
+            </Button>
             {isPlatformAdmin && (
-              <Button variant="ghost" asChild>
-                <Link to="/admin/company-requests" className="flex items-center gap-2">
-                  <ShieldAlert className="h-4 w-4" />
-                  Admin Panel
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <ShieldAlert className="h-4 w-4" />
+                    Admin Panel
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/company-requests">
+                      Company Requests
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/permission-requests">
+                      Permission Requests
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             <ThemeToggle />
             <DropdownMenu>
@@ -134,15 +155,33 @@ export function Navbar() {
               <Building2 className="h-4 w-4" />
               Companies
             </Link>
+            <Link
+              to="/my-permission-requests"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Key className="h-4 w-4" />
+              My Requests
+            </Link>
             {isPlatformAdmin && (
-              <Link
-                to="/admin/company-requests"
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <ShieldAlert className="h-4 w-4" />
-                Admin Panel
-              </Link>
+              <>
+                <Link
+                  to="/admin/company-requests"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  Company Requests (Admin)
+                </Link>
+                <Link
+                  to="/admin/permission-requests"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  Permission Requests (Admin)
+                </Link>
+              </>
             )}
             <Link
               to="/time-tracker"

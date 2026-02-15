@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, User, Package, Settings } from 'lucide-react';
+import { Clock, User, Package, Settings, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ModuleCardProps {
@@ -74,10 +74,10 @@ export default function Dashboard() {
             onClick={() => navigate('/profile')}
           />
           <ModuleCard
-            title="Coming Soon"
-            description="More modules coming soon"
-            icon={<Package className="h-8 w-8" />}
-            disabled
+            title="Permission Requests"
+            description="Request permissions and view your requests"
+            icon={<Key className="h-8 w-8" />}
+            onClick={() => navigate('/my-permission-requests')}
           />
           <ModuleCard
             title="Coming Soon"

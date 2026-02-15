@@ -18,6 +18,9 @@ import EditCompany from "./pages/EditCompany";
 import RequestCompany from "./pages/RequestCompany";
 import MyRequests from "./pages/MyRequests";
 import AdminCompanyRequests from "./pages/AdminCompanyRequests";
+import RequestPermission from "./pages/RequestPermission";
+import MyPermissionRequests from "./pages/MyPermissionRequests";
+import AdminPermissionRequests from "./pages/AdminPermissionRequests";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -111,6 +114,30 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminCompanyRequests />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/request-permission"
+                element={
+                  <ProtectedRoute>
+                    <RequestPermission />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-permission-requests"
+                element={
+                  <ProtectedRoute>
+                    <MyPermissionRequests />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/permission-requests"
+                element={
+                  <ProtectedRoute>
+                    <AdminPermissionRequests />
                   </ProtectedRoute>
                 }
               />
