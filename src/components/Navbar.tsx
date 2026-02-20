@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu, X, User, LogOut, LayoutDashboard, Palette, Building2, Clock, ShieldAlert, Key, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { NotificationBell } from '@/components/NotificationBell';
 import { CompanySelector } from '@/components/CompanySelector';
 
 export function Navbar() {
@@ -82,10 +84,17 @@ export function Navbar() {
                       Permission Requests
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/permissions">
+                      Manage Permissions
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
             <ThemeToggle />
+            <LanguageToggle />
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
@@ -95,7 +104,7 @@ export function Navbar() {
                       {user?.fullName ? getInitials(user.fullName) : 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{user?.fullName}</span>
+                  <span className="text-sm font-medium">{user?.fullName?.split(' ')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -181,6 +190,14 @@ export function Navbar() {
                   <ShieldAlert className="h-4 w-4" />
                   Permission Requests (Admin)
                 </Link>
+                <Link
+                  to="/admin/permissions"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  Manage Permissions (Admin)
+                </Link>
               </>
             )}
             <Link
@@ -203,7 +220,11 @@ export function Navbar() {
                 <Palette className="h-4 w-4" />
                 <span className="text-sm font-medium">Theme</span>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <LanguageToggle />
+                <NotificationBell />
+              </div>
             </div>
             </Link>
             <button

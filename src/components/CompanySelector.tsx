@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 export function CompanySelector() {
   const { companies, selectedCompany, setSelectedCompany, hasGlobalPermission } = useAuth();
   const navigate = useNavigate();
-  const hasCreatePermission = hasGlobalPermission('company:create');
+  const hasCreatePermission = hasGlobalPermission('COMPANY:CREATE');
 
   // No companies - show disabled state
   if (companies.length === 0) {

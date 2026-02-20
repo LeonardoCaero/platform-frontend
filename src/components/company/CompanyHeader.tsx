@@ -7,12 +7,13 @@ import { Building2, Pencil, Trash2, RotateCcw } from 'lucide-react';
 
 interface CompanyHeaderProps {
   company: Company;
+  canManage?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onRestore: () => void;
 }
 
-export function CompanyHeader({ company, onEdit, onDelete, onRestore }: CompanyHeaderProps) {
+export function CompanyHeader({ company, canManage = false, onEdit, onDelete, onRestore }: CompanyHeaderProps) {
   return (
     <Card>
       <CardContent className="pt-6">
@@ -33,22 +34,24 @@ export function CompanyHeader({ company, onEdit, onDelete, onRestore }: CompanyH
             </div>
           </div>
           <div className="flex gap-2">
-            {company.deletedAt ? (
-              <Button onClick={onRestore}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Restore
-              </Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={onEdit}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit
+            {canManage && (
+              company.deletedAt ? (
+                <Button onClick={onRestore}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Restore
                 </Button>
-                <Button variant="destructive" onClick={onDelete}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
-              </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={onEdit}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button variant="destructive" onClick={onDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </>
+              )
             )}
           </div>
         </div>

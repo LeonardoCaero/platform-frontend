@@ -79,11 +79,17 @@ export interface UpdateCompanyDto {
 }
 
 export interface InviteMemberDto {
-  email: string;
-  roleIds: string[];
+  userId: string;
   position?: string;
   department?: string;
-  expiresAt?: string;
+}
+
+export interface UserSearchResult {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName?: string;
+  avatarUrl?: string;
 }
 
 export interface CreateCompanyRoleDto {

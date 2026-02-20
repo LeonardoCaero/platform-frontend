@@ -51,7 +51,7 @@ export default function CreateCompany() {
   useEffect(() => {
     if (isLoading) return;
   
-    if (!hasGlobalPermission('company:create')) {
+    if (!hasGlobalPermission('COMPANY:CREATE')) {
       toast({
         title: 'Access Denied',
         description: 'You do not have permission to create companies',
@@ -210,7 +210,7 @@ export default function CreateCompany() {
     return labels[roleId] || 'Member';
   };
 
-  if (!hasGlobalPermission('company:create')) {
+  if (!hasGlobalPermission('COMPANY:CREATE')) {
     return null;
   }
 

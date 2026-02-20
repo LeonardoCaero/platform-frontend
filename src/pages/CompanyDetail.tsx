@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { CompanyHeader } from '@/components/company/CompanyHeader';
 import { OverviewTab } from '@/components/company/OverviewTab';
@@ -28,10 +29,17 @@ export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isOwnerOf, getMembershipId, selectedCompany, setSelectedCompany, refreshUser } = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
   const companyId = id!;
+
+  // Role-based access control
+  const isOwner = isOwnerOf(companyId); // true for platform admins and company owners
+  const membershipId = getMembershipId(companyId);
+  const isMember = !!membershipId; // true only for actual members (not platform admins)
 
   const { data: company, isLoading: companyLoading } = useQuery({
     queryKey: ['company', companyId],
@@ -56,6 +64,11 @@ export default function CompanyDetail() {
     onSuccess: () => {
       toast.success('Company has been deleted');
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
+      // Deselect if this was the active company
+      if (selectedCompany?.id === companyId) {
+        setSelectedCompany(null);
+        refreshUser();
+      }
       setDeleteDialogOpen(false);
     },
     onError: (error: any) => {
@@ -72,6 +85,21 @@ export default function CompanyDetail() {
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to restore company');
+    },
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: () => companyMembersService.removeMember(companyId, membershipId!),
+    onSuccess: () => {
+      toast.success('You have left the company');
+      if (selectedCompany?.id === companyId) {
+        setSelectedCompany(null);
+      }
+      refreshUser();
+      navigate('/companies');
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Failed to leave company');
     },
   });
 
@@ -101,6 +129,7 @@ export default function CompanyDetail() {
       <div className="space-y-6">
         <CompanyHeader
           company={company}
+          canManage={isOwner}
           onEdit={() => navigate(`/companies/${company.id}/edit`)}
           onDelete={() => setDeleteDialogOpen(true)}
           onRestore={() => setRestoreDialogOpen(true)}
@@ -116,10 +145,12 @@ export default function CompanyDetail() {
               <Users className="h-4 w-4 mr-2" />
               Members
             </TabsTrigger>
-            <TabsTrigger value="roles">
-              <Shield className="h-4 w-4 mr-2" />
-              Roles
-            </TabsTrigger>
+            {isOwner && (
+              <TabsTrigger value="roles">
+                <Shield className="h-4 w-4 mr-2" />
+                Roles
+              </TabsTrigger>
+            )}
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
               Settings
@@ -131,15 +162,22 @@ export default function CompanyDetail() {
           </TabsContent>
 
           <TabsContent value="members" className="mt-6">
-            <MembersTab members={members} isLoading={membersLoading} />
+            <MembersTab companyId={companyId} members={members} isLoading={membersLoading} canInvite={isOwner} />
           </TabsContent>
 
-          <TabsContent value="roles" className="mt-6">
-            <RolesTab roles={roles} isLoading={rolesLoading} />
-          </TabsContent>
+          {isOwner && (
+            <TabsContent value="roles" className="mt-6">
+              <RolesTab roles={roles} isLoading={rolesLoading} />
+            </TabsContent>
+          )}
 
           <TabsContent value="settings" className="mt-6">
-            <SettingsTab onDelete={() => setDeleteDialogOpen(true)} />
+            <SettingsTab
+              canDelete={isOwner && !company.deletedAt}
+              canLeave={isMember && !company.deletedAt}
+              onDelete={() => setDeleteDialogOpen(true)}
+              onLeave={() => setLeaveDialogOpen(true)}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -179,6 +217,28 @@ export default function CompanyDetail() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => restoreMutation.mutate()}>
               Restore
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave Company</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to leave <strong>{company.name}</strong>?
+              <br /><br />
+              You will immediately lose access to this company and all its resources.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => leaveMutation.mutate()}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              Leave
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

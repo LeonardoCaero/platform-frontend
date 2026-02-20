@@ -15,6 +15,8 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   hasGlobalPermission: (permission: string) => boolean;
   hasCompanyPermission: (permission: string, companyId?: string) => boolean;
+  isOwnerOf: (companyId: string) => boolean;
+  getMembershipId: (companyId: string) => string | undefined;
   setSelectedCompany: (company: CompanyMembership | null) => void;
 }
 
@@ -63,6 +65,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return false;
     if (user.isPlatformAdmin) return true;
     return user.globalPermissions?.some(p => p.key === permission) || false;
+  }, [user]);
+
+  const isOwnerOf = useCallback((companyId: string): boolean => {
+    if (!user) return false;
+    if (user.isPlatformAdmin) return true;
+    const company = user.companies?.find(c => c.id === companyId);
+    return company?.roles?.some(r => r.name === 'Owner') ?? false;
+  }, [user]);
+
+  const getMembershipId = useCallback((companyId: string): string | undefined => {
+    return user?.companies?.find(c => c.id === companyId)?.membershipId;
   }, [user]);
 
   const hasCompanyPermission = useCallback((permission: string, companyId?: string): boolean => {
@@ -157,6 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshUser,
         hasGlobalPermission,
         hasCompanyPermission,
+        isOwnerOf,
+        getMembershipId,
         setSelectedCompany,
       }}
     >

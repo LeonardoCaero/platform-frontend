@@ -3,17 +3,19 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Trash2, Users } from 'lucide-react';
+import { Edit, Trash2, Users, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface CompanyCardProps {
   company: Company;
   onDelete?: (company: Company) => void;
+  onRestore?: (company: Company) => void;
   canEdit?: boolean;
   canDelete?: boolean;
+  canRestore?: boolean;
 }
 
-export function CompanyCard({ company, onDelete, canEdit = true, canDelete = true }: CompanyCardProps) {
+export function CompanyCard({ company, onDelete, onRestore, canEdit = true, canDelete = true, canRestore = false }: CompanyCardProps) {
   const navigate = useNavigate();
 
   const getInitials = (name: string) => {
@@ -61,6 +63,16 @@ export function CompanyCard({ company, onDelete, canEdit = true, canDelete = tru
         </CardContent>
       )}
       <CardFooter className="flex justify-end gap-2 pt-4 border-t">
+        {canRestore && !!company.deletedAt && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onRestore?.(company); }}
+          >
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Restore
+          </Button>
+        )}
         {canEdit && !company.deletedAt && (
           <Button
             variant="outline"

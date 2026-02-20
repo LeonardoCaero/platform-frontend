@@ -16,7 +16,18 @@ export const companiesService = {
    * Get paginated list of companies
    */
   async getCompanies(params: CompaniesListParams = {}): Promise<PaginatedCompaniesResponse> {
-    const { data } = await api.get<PaginatedCompaniesResponse>(BASE_URL, { params });
+    const queryParams: any = {
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      status: params.status !== 'ALL' ? params.status : undefined,
+    };
+    
+    if (params.includeDeleted === true) {
+      queryParams.includeDeleted = true;
+    }
+    
+    const { data } = await api.get<PaginatedCompaniesResponse>(BASE_URL, { params: queryParams });
     return data;
   },
 

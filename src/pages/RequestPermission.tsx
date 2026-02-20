@@ -37,13 +37,25 @@ export default function RequestPermission() {
         // Fetch available permissions
         const permissions = await permissionRequestsService.getAvailablePermissions();
         
-        // Get user's current permissions to filter out
-        const { data } = await api.get('/auth/me');
-        const userPermissions = data.data.globalPermissions || [];
-        const userPermissionKeys = userPermissions.map((p: any) => p.key);
+        // Get user's current permissions and pending requests to filter out
+        const [userResponse, requestsResponse] = await Promise.all([
+          api.get('/auth/me'),
+          permissionRequestsService.getMyRequests({ status: 'PENDING' }),
+        ]);
 
-        // Filter out permissions the user already has
-        const available = permissions.filter(p => !userPermissionKeys.includes(p.key));
+        const userPermissions = userResponse.data.data.globalPermissions || [];
+        const userPermissionIds = userPermissions.map((p: any) => p.id);
+
+        const pendingRequests = requestsResponse.data || [];
+        const pendingPermissionIds = pendingRequests
+          .map((req: any) => req.requestedPermissionId)
+          .filter(Boolean);
+
+        // Filter out permissions the user already has OR has pending requests for
+        const available = permissions.filter(
+          p => !userPermissionIds.includes(p.id) && !pendingPermissionIds.includes(p.id)
+        );
+        
         setAvailablePermissions(available);
       } catch (error) {
         console.error('Failed to load permissions', error);

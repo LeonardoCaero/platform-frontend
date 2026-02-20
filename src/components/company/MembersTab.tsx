@@ -1,18 +1,24 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/StatusBadge';
+import { InviteMemberModal } from '@/components/company/InviteMemberModal';
 import { CompanyMember } from '@/types/company.types';
 import { Users, Plus } from 'lucide-react';
 
 interface MembersTabProps {
+  companyId: string;
   members: CompanyMember[] | undefined;
   isLoading: boolean;
+  canInvite?: boolean;
 }
 
-export function MembersTab({ members, isLoading }: MembersTabProps) {
+export function MembersTab({ companyId, members, isLoading, canInvite = false }: MembersTabProps) {
+  const [inviteOpen, setInviteOpen] = useState(false);
+
   const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
   };
@@ -21,10 +27,12 @@ export function MembersTab({ members, isLoading }: MembersTabProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-semibold">Company Members</h3>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Invite Member
-        </Button>
+        {canInvite && (
+          <Button onClick={() => setInviteOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Invite Member
+          </Button>
+        )}
       </div>
       <Card>
         <CardContent className="pt-6">
@@ -38,10 +46,12 @@ export function MembersTab({ members, isLoading }: MembersTabProps) {
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <Users className="h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground">No members yet</p>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Invite First Member
-              </Button>
+              {canInvite && (
+                <Button onClick={() => setInviteOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Invite First Member
+                </Button>
+              )}
             </div>
           ) : (
             <Table>
@@ -114,6 +124,12 @@ export function MembersTab({ members, isLoading }: MembersTabProps) {
           )}
         </CardContent>
       </Card>
+
+      <InviteMemberModal
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        companyId={companyId}
+      />
     </div>
   );
 }

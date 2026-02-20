@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { CompanyCard } from '@/components/CompanyCard';
 import { CompanyFilters, FilterValues } from '@/components/CompanyFilters';
@@ -23,6 +24,7 @@ import { Building2, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Companies() {
   const navigate = useNavigate();
+  const { isPlatformAdmin, isOwnerOf } = useAuth();
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
     status: 'ALL',
@@ -30,6 +32,7 @@ export default function Companies() {
   });
   const [page, setPage] = useState(1);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [companyToRestore, setCompanyToRestore] = useState<Company | null>(null);
   const limit = 12;
 
   const { data, isLoading, refetch } = useQuery({
@@ -53,6 +56,10 @@ export default function Companies() {
     setCompanyToDelete(company);
   };
 
+  const handleRestoreClick = (company: Company) => {
+    setCompanyToRestore(company);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!companyToDelete) return;
 
@@ -63,6 +70,18 @@ export default function Companies() {
       refetch();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to delete company');
+    }
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!companyToRestore) return;
+    try {
+      await companiesService.restoreCompany(companyToRestore.id);
+      toast.success(`${companyToRestore.name} has been restored`);
+      setCompanyToRestore(null);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to restore company');
     }
   };
 
@@ -114,15 +133,20 @@ export default function Companies() {
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {data.data.map((company) => (
-                <CompanyCard
-                  key={company.id}
-                  company={company}
-                  onDelete={handleDeleteClick}
-                  canEdit={true}
-                  canDelete={true}
-                />
-              ))}
+              {data.data.map((company) => {
+                const canManage = isPlatformAdmin || isOwnerOf(company.id);
+                return (
+                  <CompanyCard
+                    key={company.id}
+                    company={company}
+                    onDelete={handleDeleteClick}
+                    onRestore={handleRestoreClick}
+                    canEdit={canManage}
+                    canDelete={canManage}
+                    canRestore={canManage}
+                  />
+                );
+              })}
             </div>
 
             {pagination && pagination.totalPages > 1 && (
@@ -194,6 +218,23 @@ export default function Companies() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!companyToRestore} onOpenChange={() => setCompanyToRestore(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore Company</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to restore <strong>{companyToRestore?.name}</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestoreConfirm}>
+              Restore
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -6,13 +6,21 @@ export interface Permission {
   grantedAt: string;
 }
 
+export interface CompanyRole {
+  id: string;
+  name: string;
+  color?: string | null;
+}
+
 export interface CompanyMembership {
   id: string;
   name: string;
   slug: string;
   logo?: string;
   status: 'ACTIVE' | 'SUSPENDED';
-  roles: string[];
+  membershipId: string;
+  membershipStatus: 'ACTIVE' | 'INVITED' | 'SUSPENDED';
+  roles: CompanyRole[];
   permissions: string[];
 }
 

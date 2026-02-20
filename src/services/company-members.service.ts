@@ -4,6 +4,7 @@ import {
   InviteMemberDto,
   CompanyRole,
   CreateCompanyRoleDto,
+  UserSearchResult,
 } from '@/types/company.types';
 
 export const companyMembersService = {
@@ -12,6 +13,15 @@ export const companyMembersService = {
    */
   async getCompanyMembers(companyId: string): Promise<CompanyMember[]> {
     const { data } = await api.get<CompanyMember[]>(`/companies/${companyId}/members`);
+    return data;
+  },
+
+  /**
+   * Search platform users who are NOT yet members of this company
+   */
+  async searchNonMembers(companyId: string, search?: string): Promise<UserSearchResult[]> {
+    const params = search ? { search } : {};
+    const { data } = await api.get<UserSearchResult[]>(`/companies/${companyId}/non-members`, { params });
     return data;
   },
 
