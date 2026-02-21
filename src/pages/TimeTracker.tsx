@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,6 +34,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -46,6 +49,8 @@ import { projectsService } from '@/services/projects.service';
 import type { TimeEntry } from '@/types/time-tracker.types';
 import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const QUICK_HOURS = [1, 2, 4, 6, 8];
 
 type ViewType = 'daily' | 'weekly' | 'monthly';
 
@@ -76,6 +81,9 @@ export default function TimeTracker() {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<TimeEntry | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showMobileForm, setShowMobileForm] = useState(false);
+
+  const dayStripRef = useRef<HTMLDivElement>(null);
 
   const companyId = selectedCompany?.id ?? '';
   const isOwner = isOwnerOf(companyId);
@@ -118,9 +126,10 @@ export default function TimeTracker() {
     mutationFn: timeEntriesService.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
-      toast({ title: 'Entry saved' });
+      toast({ title: language === 'es' ? 'Imputacion guardada' : 'Entry saved' });
       reset();
       setShowAdvanced(false);
+      setShowMobileForm(false);
     },
     onError: (error: any) => {
       toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not save entry' });
@@ -131,10 +140,11 @@ export default function TimeTracker() {
     mutationFn: ({ id, data }: { id: string; data: any }) => timeEntriesService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
-      toast({ title: 'Entry updated' });
+      toast({ title: language === 'es' ? 'Imputacion actualizada' : 'Entry updated' });
       setEditingEntry(null);
       reset();
       setShowAdvanced(false);
+      setShowMobileForm(false);
     },
     onError: (error: any) => {
       toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not update entry' });
@@ -145,7 +155,7 @@ export default function TimeTracker() {
     mutationFn: timeEntriesService.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
-      toast({ title: 'Entry deleted' });
+      toast({ title: language === 'es' ? 'Imputacion eliminada' : 'Entry deleted' });
       setDeletingEntry(null);
     },
     onError: (error: any) => {
@@ -184,6 +194,8 @@ export default function TimeTracker() {
 
   const startTime = watch('startTime');
   const endTime = watch('endTime');
+  const watchedHours = watch('hours');
+  const watchedMinutes = watch('minutes');
 
   useEffect(() => {
     if (startTime && endTime) {
@@ -196,6 +208,14 @@ export default function TimeTracker() {
       }
     }
   }, [startTime, endTime, setValue]);
+
+  // Scroll today into view when strip renders
+  useEffect(() => {
+    if (view === 'daily' && dayStripRef.current) {
+      const todayBtn = dayStripRef.current.querySelector('[data-today="true"]');
+      todayBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [view, selectedDate]);
 
   const onSubmit = (data: TimeEntryFormData) => {
     if (!companyId) {
@@ -222,6 +242,13 @@ export default function TimeTracker() {
     setEditingEntry(null);
     reset({ projectId: null, date: new Date(), hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '' });
     setShowAdvanced(false);
+    setShowMobileForm(false);
+  };
+
+  const openEditEntry = (entry: TimeEntry) => {
+    setEditingEntry(entry);
+    if (view !== 'daily') { setView('daily'); setSelectedDate(parseISO(entry.date)); }
+    setShowMobileForm(true);
   };
 
   const handlePrev = () => {
@@ -243,13 +270,13 @@ export default function TimeTracker() {
   };
 
   const getPeriodLabel = () => {
-    if (view === 'daily') return format(selectedDate, 'EEEE, MMMM d, yyyy', { locale });
+    if (view === 'daily') return format(selectedDate, 'EEE, MMM d', { locale });
     if (view === 'weekly') {
       const s = startOfWeek(currentDate, { weekStartsOn: 1 });
       const e = endOfWeek(currentDate, { weekStartsOn: 1 });
-      return `${format(s, 'MMM d', { locale })} - ${format(e, 'MMM d, yyyy', { locale })}`;
+      return `${format(s, 'MMM d', { locale })} – ${format(e, 'MMM d', { locale })}`;
     }
-    return format(currentDate, 'MMMM yyyy', { locale });
+    return format(currentDate, 'MMM yyyy', { locale });
   };
 
   const totalHours = entries.reduce((sum, e) => sum + Number(e.hours), 0);
@@ -277,17 +304,29 @@ export default function TimeTracker() {
     ? ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
     : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  // Day strip: 6 days before selected + 7 days after
+  const dayStripDays = eachDayOfInterval({ start: subDays(selectedDate, 6), end: addDays(selectedDate, 7) });
+
   const EntryCard = ({ entry, compact = false }: { entry: TimeEntry; compact?: boolean }) => {
     const isOwnEntry = entry.userId === user?.id;
+    const totalMins = Math.round(Number(entry.hours) * 60);
+    const hDisplay = Math.floor(totalMins / 60);
+    const mDisplay = totalMins % 60;
+    const durationLabel = mDisplay > 0 ? `${hDisplay}h ${mDisplay}m` : `${hDisplay}h`;
     return (
     <div className={cn(
-      'flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors group',
-      compact && 'p-2',
+      'flex items-start gap-3 rounded-xl border bg-card transition-colors group',
+      compact ? 'p-3' : 'p-4',
       isOwner && isOwnEntry && 'border-primary/40 bg-primary/5'
     )}>
+      {/* Color bar */}
+      <div
+        className={cn('self-stretch w-1 rounded-full shrink-0', !entry.project?.color && 'bg-muted')}
+        style={{ backgroundColor: entry.project?.color ?? undefined }}
+      />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className={cn('font-semibold truncate', compact ? 'text-xs' : 'text-sm')}>{entry.title}</span>
+        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+          <span className={cn('font-semibold leading-snug', compact ? 'text-xs' : 'text-sm')}>{entry.title}</span>
           {entry.project && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0" style={{ borderColor: entry.project.color ?? undefined }}>
               {entry.project.name}
@@ -298,29 +337,32 @@ export default function TimeTracker() {
           )}
         </div>
         {entry.description && !compact && (
-          <p className="text-xs text-muted-foreground line-clamp-1 mb-1">{entry.description}</p>
+          <p className="text-xs text-muted-foreground line-clamp-2 mb-1.5">{entry.description}</p>
         )}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{Number(entry.hours).toFixed(1)}h</span>
-          {entry.startTime && entry.endTime && <span>{entry.startTime} - {entry.endTime}</span>}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+          <span className="font-semibold text-foreground text-sm">{durationLabel}</span>
+          {entry.startTime && entry.endTime && <span className="tabular-nums">{entry.startTime} – {entry.endTime}</span>}
           {isOwner && entry.user && !isOwnEntry && (
             <span className="text-muted-foreground">{entry.user.fullName}</span>
           )}
         </div>
       </div>
       {(!isOwner || isOwnEntry) && (
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        /* Always visible on mobile, hover-only on desktop */
+        <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
           <Button
-            variant="ghost" size="icon" className="h-6 w-6"
-            onClick={() => {
-              setEditingEntry(entry);
-              if (view !== 'daily') { setView('daily'); setSelectedDate(parseISO(entry.date)); }
-            }}
+            variant="ghost" size="icon"
+            className="h-10 w-10 sm:h-7 sm:w-7 touch-manipulation"
+            onClick={() => openEditEntry(entry)}
           >
-            <Pencil className="h-3 w-3" />
+            <Pencil className="h-4 w-4 sm:h-3 sm:w-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDeletingEntry(entry)}>
-            <Trash2 className="h-3 w-3 text-destructive" />
+          <Button
+            variant="ghost" size="icon"
+            className="h-10 w-10 sm:h-7 sm:w-7 touch-manipulation"
+            onClick={() => setDeletingEntry(entry)}
+          >
+            <Trash2 className="h-4 w-4 sm:h-3 sm:w-3 text-destructive" />
           </Button>
         </div>
       )}
@@ -328,24 +370,192 @@ export default function TimeTracker() {
   );
   };
 
+  // ---------- Quick Hours Buttons ----------
+  const QuickHourButtons = () => (
+    <div className="flex gap-1.5 flex-wrap">
+      {QUICK_HOURS.map(h => {
+        const active = watchedHours === h && watchedMinutes === 0;
+        return (
+          <button
+            key={h}
+            type="button"
+            onClick={() => { setValue('hours', h); setValue('minutes', 0); }}
+            className={cn(
+              'flex-1 min-w-[2.5rem] py-2.5 rounded-lg border text-sm font-bold transition-colors touch-manipulation select-none',
+              active
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-background hover:bg-accent border-border text-foreground'
+            )}
+          >
+            {h}h
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // ---------- Entry Form ----------
+  const EntryForm = ({ inDialog = false }: { inDialog?: boolean }) => (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Title */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">{tt.whatDidYouDo}</Label>
+        <Input
+          placeholder={tt.placeholder}
+          className={cn('text-base', inDialog ? 'h-12' : 'h-10')}
+          autoComplete="off"
+          {...register('title')}
+        />
+        {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+      </div>
+
+      {/* Quick hours */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">{tt.hours}</Label>
+        <QuickHourButtons />
+        <div className="flex items-center gap-2">
+          <Input
+            type="number" min="0" max="23" placeholder="0"
+            inputMode="numeric"
+            className="text-center text-base font-semibold h-11 flex-1"
+            {...register('hours', { valueAsNumber: true })}
+          />
+          <span className="text-sm text-muted-foreground font-medium shrink-0">h</span>
+          <Input
+            type="number" min="0" max="59" placeholder="0"
+            inputMode="numeric"
+            className="text-center text-base font-semibold h-11 flex-1"
+            {...register('minutes', { setValueAs: (v) => v === '' || v === undefined ? 0 : parseInt(v, 10) })}
+          />
+          <span className="text-sm text-muted-foreground font-medium shrink-0">min</span>
+        </div>
+        {errors.hours && <p className="text-xs text-destructive">{errors.hours.message}</p>}
+      </div>
+
+      {/* Date */}
+      <div className="space-y-1.5">
+        <Label className="text-sm font-medium">{tt.date}</Label>
+        <Controller
+          name="date"
+          control={control}
+          render={({ field }) => (
+            <Input
+              type="date"
+              value={format(field.value, 'yyyy-MM-dd')}
+              onChange={(e) => field.onChange(new Date(e.target.value + 'T12:00:00'))}
+              className={cn('text-base', inDialog ? 'h-12' : 'h-10')}
+            />
+          )}
+        />
+      </div>
+
+      {/* Advanced */}
+      <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" size="sm" className="w-full justify-between h-9 px-2 text-sm text-muted-foreground">
+            {tt.advancedOptions}
+            <ChevronDown className={cn('h-4 w-4 transition-transform', showAdvanced && 'rotate-180')} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-3 pt-2">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">{tt.description}</Label>
+            <Textarea
+              placeholder={tt.descriptionPlaceholder}
+              rows={3}
+              className="resize-none text-base"
+              {...register('description')}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">{tt.project}</Label>
+            <Controller
+              name="projectId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value || '_none'} onValueChange={(v) => field.onChange(v === '_none' ? null : v)}>
+                  <SelectTrigger className={cn('text-base', inDialog ? 'h-12' : 'h-10')}>
+                    <SelectValue placeholder={tt.noProject} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">{tt.noProject}</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm">{tt.startTime}</Label>
+              <Input type="time" className={cn('text-base', inDialog ? 'h-12' : 'h-10')} {...register('startTime')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm">{tt.endTime}</Label>
+              <Input type="time" className={cn('text-base', inDialog ? 'h-12' : 'h-10')} {...register('endTime')} />
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      {/* Quick shortcuts */}
+      <div className="flex gap-1.5">
+        <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"
+          onClick={() => { setValue('date', new Date()); setValue('hours', 8); setValue('minutes', 0); }}>
+          {tt.todayShortcut}
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"
+          onClick={() => { setValue('date', subDays(new Date(), 1)); setValue('hours', 8); setValue('minutes', 0); }}>
+          {tt.yesterdayShortcut}
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"
+          onClick={() => { setValue('hours', 4); setValue('minutes', 0); }}>
+          {tt.halfDay}
+        </Button>
+      </div>
+
+      {/* Submit */}
+      <div className="flex gap-2 pt-1">
+        {editingEntry && (
+          <Button type="button" variant="outline" onClick={cancelEdit}
+            className={cn('flex-1 touch-manipulation', inDialog ? 'h-12 text-base' : 'h-10')}>
+            {tt.cancel}
+          </Button>
+        )}
+        <Button
+          type="submit"
+          className={cn('flex-1 font-semibold touch-manipulation', inDialog ? 'h-12 text-base' : 'h-10')}
+          disabled={createMutation.isPending || updateMutation.isPending}
+        >
+          {(createMutation.isPending || updateMutation.isPending) && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          {editingEntry ? tt.saveChanges : tt.logHours}
+        </Button>
+      </div>
+    </form>
+  );
+
   return (
     <DashboardLayout>
-      <div className="space-y-4 max-w-5xl mx-auto">
+      <div className="space-y-4 max-w-5xl mx-auto pb-24 lg:pb-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Clock className="h-6 w-6 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               {tt.title}
             </h1>
             {selectedCompany && (
               <p className="text-sm text-muted-foreground mt-0.5">{selectedCompany.name}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span className="font-semibold text-foreground text-base">{totalHours.toFixed(1)}h</span>
-            <span>{tt.subtitle}</span>
+          <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2 shrink-0">
+            <Clock className="h-4 w-4 text-primary" />
+            <span className="font-bold text-lg text-foreground leading-none">{totalHours.toFixed(1)}h</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">{tt.subtitle}</span>
           </div>
         </div>
 
@@ -357,169 +567,100 @@ export default function TimeTracker() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-            {/* Form */}
-            <div className="space-y-3">
+          <div className="grid gap-4 lg:grid-cols-[400px_1fr]">
+
+            {/* ===== Desktop Form (left column, hidden on mobile) ===== */}
+            <div className="hidden lg:block space-y-3">
               <Card>
-                <CardHeader className="pb-3 pt-4 px-4">
+                <CardHeader className="pb-3 pt-4 px-5">
                   <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     {editingEntry ? tt.editEntry : tt.newEntry}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="px-4 pb-4">
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs font-medium">{tt.whatDidYouDo}</Label>
-                      <Input placeholder={tt.placeholder} className="text-sm" {...register('title')} />
-                      {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs font-medium">{tt.hours}</Label>
-                      <div className="flex items-center gap-1">
-                        <Input
-                          type="number" min="0" max="23" placeholder="8"
-                          className="text-sm"
-                          {...register('hours', { valueAsNumber: true })}
-                        />
-                        <span className="text-xs text-muted-foreground shrink-0">h</span>
-                        <Input
-                          type="number" min="0" max="59" placeholder="0"
-                          className="text-sm"
-                          {...register('minutes', { setValueAs: (v) => v === '' || v === undefined ? 0 : parseInt(v, 10) })}
-                        />
-                        <span className="text-xs text-muted-foreground shrink-0">min</span>
-                      </div>
-                        {errors.hours && <p className="text-xs text-destructive">{errors.hours.message}</p>}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs font-medium">{tt.date}</Label>
-                        <Controller
-                          name="date"
-                          control={control}
-                          render={({ field }) => (
-                            <Input
-                              type="date"
-                              value={format(field.value, 'yyyy-MM-dd')}
-                              onChange={(e) => field.onChange(new Date(e.target.value + 'T12:00:00'))}
-                              className="text-sm"
-                            />
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" size="sm" className="w-full justify-between h-7 px-2 text-xs text-muted-foreground">
-                          {tt.advancedOptions}
-                          <ChevronDown className={cn('h-3 w-3 transition-transform', showAdvanced && 'rotate-180')} />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="space-y-3 pt-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs font-medium">{tt.description}</Label>
-                          <Textarea
-                            placeholder={tt.descriptionPlaceholder}
-                            rows={2}
-                            className="resize-none text-sm"
-                            {...register('description')}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs font-medium">{tt.project}</Label>
-                          <Controller
-                            name="projectId"
-                            control={control}
-                            render={({ field }) => (
-                              <Select value={field.value || '_none'} onValueChange={(v) => field.onChange(v === '_none' ? null : v)}>
-                                <SelectTrigger className="text-sm h-8">
-                                  <SelectValue placeholder={tt.noProject} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="_none">{tt.noProject}</SelectItem>
-                                  {projects.map((p) => (
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">{tt.startTime}</Label>
-                            <Input type="time" className="text-sm h-8" {...register('startTime')} />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">{tt.endTime}</Label>
-                            <Input type="time" className="text-sm h-8" {...register('endTime')} />
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-
-                    <div className="flex gap-2 pt-1">
-                      {editingEntry && (
-                        <Button type="button" variant="outline" size="sm" onClick={cancelEdit} className="flex-1">
-                          {tt.cancel}
-                        </Button>
-                      )}
-                      <Button
-                        type="submit" size="sm" className="flex-1"
-                        disabled={createMutation.isPending || updateMutation.isPending}
-                      >
-                        {(createMutation.isPending || updateMutation.isPending) && (
-                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        )}
-                        {editingEntry ? tt.saveChanges : tt.logHours}
-                      </Button>
-                    </div>
-                  </form>
+                <CardContent className="px-5 pb-5">
+                  <EntryForm />
                 </CardContent>
               </Card>
-
-              {/* Quick shortcuts */}
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 text-xs"
-                  onClick={() => { setValue('date', new Date()); setValue('hours', 8); setValue('minutes', 0); }}>
-                  {tt.todayShortcut}
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 text-xs"
-                  onClick={() => { setValue('date', subDays(new Date(), 1)); setValue('hours', 8); setValue('minutes', 0); }}>
-                  {tt.yesterdayShortcut}
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 text-xs"
-                  onClick={() => { setValue('hours', 4); setValue('minutes', 0); }}>
-                  {tt.halfDay}
-                </Button>
-              </div>
             </div>
 
-            {/* Calendar / List */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="daily" className="text-xs h-7">{tt.day}</TabsTrigger>
-                    <TabsTrigger value="weekly" className="text-xs h-7">{tt.week}</TabsTrigger>
-                    <TabsTrigger value="monthly" className="text-xs h-7">{tt.month}</TabsTrigger>
+            {/* ===== Calendar / List ===== */}
+            <div className="space-y-3 min-w-0">
+
+              {/* View tabs + navigation */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Tabs value={view} onValueChange={(v) => setView(v as ViewType)} className="flex-1 sm:flex-none">
+                  <TabsList className="h-10 w-full sm:w-auto">
+                    <TabsTrigger value="daily" className="flex-1 sm:flex-none text-sm h-9 px-4">{tt.day}</TabsTrigger>
+                    <TabsTrigger value="weekly" className="flex-1 sm:flex-none text-sm h-9 px-4">{tt.week}</TabsTrigger>
+                    <TabsTrigger value="monthly" className="flex-1 sm:flex-none text-sm h-9 px-4">{tt.month}</TabsTrigger>
                   </TabsList>
                 </Tabs>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={handlePrev}>
-                    <ChevronLeft className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-1 flex-1 justify-end">
+                  <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 touch-manipulation" onClick={handlePrev}>
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs font-medium min-w-[180px] capitalize" onClick={goToday}>
+                  <Button
+                    variant="ghost" size="sm"
+                    className="h-10 text-sm font-semibold capitalize min-w-0 flex-1 sm:min-w-[160px] sm:flex-none truncate touch-manipulation"
+                    onClick={goToday}
+                  >
                     {getPeriodLabel()}
                   </Button>
-                  <Button variant="outline" size="sm" className="h-7 w-7 p-0" onClick={handleNext}>
-                    <ChevronRight className="h-3.5 w-3.5" />
+                  <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 touch-manipulation" onClick={handleNext}>
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
+
+              {/* Day strip – horizontal scrollable date picker shown in daily view */}
+              {view === 'daily' && (
+                <div className="w-full overflow-hidden">
+                  <div
+                    ref={dayStripRef}
+                    className="flex gap-1.5 overflow-x-auto pb-1 snap-x snap-mandatory"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                  {dayStripDays.map(day => {
+                    const k = format(day, 'yyyy-MM-dd');
+                    const dayTotal = (grouped[k] || []).reduce((s, e) => s + Number(e.hours), 0);
+                    const sel = isSameDay(day, selectedDate);
+                    const tod = isToday(day);
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        data-today={tod ? 'true' : undefined}
+                        onClick={() => setSelectedDate(day)}
+                        className={cn(
+                          'snap-start flex-none flex flex-col items-center gap-0.5 py-2 px-2.5 rounded-xl border transition-colors touch-manipulation min-w-[3.25rem]',
+                          sel
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : tod
+                              ? 'border-primary/60 bg-primary/5'
+                              : 'border-transparent bg-muted/40 hover:bg-accent'
+                        )}
+                      >
+                        <span className={cn('text-[10px] font-medium uppercase tracking-wide', sel ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                          {format(day, 'EEE', { locale }).slice(0, 3)}
+                        </span>
+                        <span className={cn('text-base font-bold leading-none', sel ? 'text-primary-foreground' : tod ? 'text-primary' : '')}>
+                          {format(day, 'd')}
+                        </span>
+                        <span className={cn(
+                          'text-[9px] font-semibold leading-none mt-0.5',
+                          dayTotal > 0
+                            ? sel ? 'text-primary-foreground/80' : 'text-green-600 dark:text-green-400'
+                            : 'opacity-0'
+                        )}>
+                          {dayTotal > 0 ? (dayTotal % 1 === 0 ? dayTotal : dayTotal.toFixed(1)) + 'h' : '·'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  </div>
+                </div>
+              )}
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-16">
@@ -531,16 +672,44 @@ export default function TimeTracker() {
                   {view === 'daily' && (
                     <div className="space-y-2">
                       {dayEntries.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground text-sm border rounded-lg bg-muted/20">
-                          {tt.noEntriesDay}<br />
-                          <span className="text-xs">{tt.noEntriesHint}</span>
+                        <div className="text-center py-12 text-muted-foreground border rounded-xl bg-muted/20">
+                          <Clock className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                          <p className="font-medium">{tt.noEntriesDay}</p>
+                          <p className="text-sm mt-1">{tt.noEntriesHint}</p>
+                          <Button
+                            size="sm"
+                            className="mt-4 lg:hidden touch-manipulation"
+                            onClick={() => {
+                              setValue('date', selectedDate);
+                              setEditingEntry(null);
+                              setShowMobileForm(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {tt.logHours}
+                          </Button>
                         </div>
                       ) : (
-                        dayEntries.map(e => <EntryCard key={e.id} entry={e} />)
+                        <div className="space-y-2">
+                          {dayEntries.map(e => <EntryCard key={e.id} entry={e} />)}
+                        </div>
                       )}
                       {dayEntries.length > 0 && (
-                        <div className="flex justify-end">
-                          <span className="text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between pt-1 px-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="lg:hidden h-9 touch-manipulation"
+                            onClick={() => {
+                              setValue('date', selectedDate);
+                              setEditingEntry(null);
+                              setShowMobileForm(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {tt.logHours}
+                          </Button>
+                          <span className="text-sm text-muted-foreground ml-auto">
                             {tt.total}: <strong>{dayEntries.reduce((s, e) => s + Number(e.hours), 0).toFixed(1)}h</strong>
                           </span>
                         </div>
@@ -556,28 +725,38 @@ export default function TimeTracker() {
                         const dayEs = grouped[k] || [];
                         const total = dayEs.reduce((s, e) => s + Number(e.hours), 0);
                         return (
-                          <div key={k} className={cn('border rounded-lg overflow-hidden', isToday(day) && 'border-primary')}>
+                          <div key={k} className={cn('border rounded-xl overflow-hidden', isToday(day) && 'border-primary')}>
                             <button
                               type="button"
-                              className={cn('w-full flex items-center justify-between px-3 py-2 text-left hover:bg-accent/30 transition-colors', isToday(day) && 'bg-primary/5')}
+                              className={cn(
+                                'w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-accent/30 transition-colors touch-manipulation',
+                                isToday(day) && 'bg-primary/5'
+                              )}
                               onClick={() => { setSelectedDate(day); setView('daily'); }}
                             >
-                              <span className={cn('text-sm font-medium capitalize', isToday(day) && 'text-primary')}>
+                              <span className={cn('text-sm font-semibold capitalize', isToday(day) && 'text-primary')}>
                                 {format(day, 'EEEE, MMM d', { locale })}
-                                {isToday(day) && <span className="ml-2 text-xs">({tt.today})</span>}
+                                {isToday(day) && <span className="ml-2 text-xs font-normal opacity-70">({tt.today})</span>}
                               </span>
-                              <span className={cn('text-sm font-semibold', total > 0 ? 'text-foreground' : 'text-muted-foreground')}>
-                                {total > 0 ? `${total.toFixed(1)}h` : '-'}
-                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={cn('text-sm font-bold', total > 0 ? 'text-foreground' : 'text-muted-foreground')}>
+                                  {total > 0 ? `${total.toFixed(1)}h` : '–'}
+                                </span>
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              </div>
                             </button>
                             {dayEs.length > 0 && (
-                              <div className="px-2 pb-2 space-y-1 border-t bg-muted/10">
+                              <div className="px-3 pb-3 space-y-2 border-t bg-muted/10">
                                 {dayEs.map(e => <EntryCard key={e.id} entry={e} compact />)}
                               </div>
                             )}
                           </div>
                         );
                       })}
+                      <div className="flex items-center justify-between text-sm px-1 pt-1">
+                        <span className="text-muted-foreground">{tt.total}</span>
+                        <span className="font-bold">{totalHours.toFixed(1)}h</span>
+                      </div>
                     </div>
                   )}
 
@@ -586,7 +765,7 @@ export default function TimeTracker() {
                     <div>
                       <div className="grid grid-cols-7 mb-1">
                         {weekDayLabels.map(d => (
-                          <div key={d} className="text-center text-xs text-muted-foreground font-medium py-1">{d}</div>
+                          <div key={d} className="text-center text-xs text-muted-foreground font-semibold py-1.5">{d}</div>
                         ))}
                       </div>
                       <div className="grid grid-cols-7 gap-1">
@@ -601,19 +780,19 @@ export default function TimeTracker() {
                               type="button"
                               onClick={() => { setSelectedDate(day); setView('daily'); }}
                               className={cn(
-                                'aspect-square rounded-lg p-1 flex flex-col items-center justify-center transition-colors text-center border',
+                                'aspect-square rounded-xl flex flex-col items-center justify-center transition-colors text-center border touch-manipulation',
                                 inMonth ? 'bg-card hover:bg-accent/50' : 'bg-muted/20 text-muted-foreground border-transparent',
                                 isToday(day) && 'border-primary ring-1 ring-primary',
                                 isSameDay(day, selectedDate) && 'bg-primary/10',
                                 total > 0 && inMonth && 'border-green-500/40'
                               )}
                             >
-                              <span className={cn('text-xs font-medium', isToday(day) && 'text-primary')}>
+                              <span className={cn('text-xs sm:text-sm font-semibold', isToday(day) && 'text-primary')}>
                                 {format(day, 'd')}
                               </span>
                               {total > 0 && inMonth && (
-                                <span className="text-[9px] font-semibold text-green-600 dark:text-green-400 leading-none mt-0.5">
-                                  {total.toFixed(total % 1 === 0 ? 0 : 1)}h
+                                <span className="text-[9px] sm:text-[10px] font-bold text-green-600 dark:text-green-400 leading-none mt-0.5">
+                                  {total % 1 === 0 ? total : total.toFixed(1)}h
                                 </span>
                               )}
                             </button>
@@ -624,7 +803,7 @@ export default function TimeTracker() {
                         <span className="text-muted-foreground capitalize">
                           {entries.length} {tt.entriesIn} {format(currentDate, 'MMMM', { locale })}
                         </span>
-                        <span className="font-semibold">{totalHours.toFixed(1)}h {tt.totalHours}</span>
+                        <span className="font-bold">{totalHours.toFixed(1)}h {tt.totalHours}</span>
                       </div>
                     </div>
                   )}
@@ -635,6 +814,40 @@ export default function TimeTracker() {
         )}
       </div>
 
+      {/* ===== Mobile FAB ===== */}
+      {!!companyId && (
+        <div className="fixed bottom-6 right-5 z-50 lg:hidden">
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-xl touch-manipulation"
+            onClick={() => {
+              setEditingEntry(null);
+              reset({ projectId: null, date: selectedDate, hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '' });
+              setShowAdvanced(false);
+              setShowMobileForm(true);
+            }}
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
+
+      {/* ===== Mobile Form Dialog (bottom sheet style) ===== */}
+      <Dialog open={showMobileForm} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
+        <DialogContent className="lg:hidden p-0 gap-0 max-h-[92dvh] flex flex-col w-full max-w-full sm:max-w-lg rounded-t-2xl rounded-b-none sm:rounded-2xl fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto translate-y-0 sm:translate-y-0 sm:mx-auto">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b shrink-0">
+            <DialogTitle className="text-base font-semibold flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              {editingEntry ? tt.editEntry : tt.newEntry}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 px-5 py-4">
+            <EntryForm inDialog />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===== Delete Confirmation ===== */}
       <AlertDialog open={!!deletingEntry} onOpenChange={() => setDeletingEntry(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
