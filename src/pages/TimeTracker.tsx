@@ -41,13 +41,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { timeEntriesService } from '@/services/time-entries.service';
 import { projectsService } from '@/services/projects.service';
 import type { TimeEntry } from '@/types/time-tracker.types';
-import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const QUICK_HOURS = [1, 2, 4, 6, 8];
@@ -82,6 +83,7 @@ export default function TimeTracker() {
   const [deletingEntry, setDeletingEntry] = useState<TimeEntry | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showMobileForm, setShowMobileForm] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const dayStripRef = useRef<HTMLDivElement>(null);
 
@@ -439,12 +441,60 @@ export default function TimeTracker() {
           name="date"
           control={control}
           render={({ field }) => (
-            <Input
-              type="date"
-              value={format(field.value, 'yyyy-MM-dd')}
-              onChange={(e) => field.onChange(new Date(e.target.value + 'T12:00:00'))}
-              className={cn('text-base', inDialog ? 'h-12' : 'h-10')}
-            />
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setDatePickerOpen(o => !o)}
+                className={cn(
+                  'w-full flex items-center justify-between rounded-lg border border-input bg-background px-3 text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation',
+                  inDialog ? 'h-12 text-base' : 'h-10',
+                  datePickerOpen && 'ring-2 ring-ring',
+                )}
+              >
+                <span className={field.value ? 'text-foreground' : 'text-muted-foreground'}>
+                  {field.value ? format(field.value, 'PPP', { locale }) : tt.date}
+                </span>
+                <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
+              {datePickerOpen && (
+                <div className="mt-1.5 rounded-2xl ring-1 ring-border bg-popover text-popover-foreground shadow-2xl overflow-hidden">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    onSelect={(d) => {
+                      if (d) {
+                        field.onChange(d);
+                        setDatePickerOpen(false);
+                      }
+                    }}
+                    locale={locale}
+                    classNames={{
+                      months: 'flex flex-col',
+                      month: 'space-y-2',
+                      caption: 'flex justify-center pt-2 pb-1 relative items-center',
+                      caption_label: 'text-sm font-semibold capitalize',
+                      nav: 'space-x-1 flex items-center',
+                      nav_button: cn(
+                        'h-7 w-7 bg-transparent p-0 rounded-lg border border-input hover:bg-accent inline-flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity'
+                      ),
+                      nav_button_previous: 'absolute left-2',
+                      nav_button_next: 'absolute right-2',
+                      table: 'w-full border-collapse',
+                      head_row: 'flex',
+                      head_cell: 'text-muted-foreground w-9 font-normal text-[0.75rem] text-center py-1',
+                      row: 'flex w-full mt-1',
+                      cell: 'w-9 h-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
+                      day: 'h-9 w-9 p-0 font-normal rounded-lg hover:bg-accent hover:text-accent-foreground aria-selected:opacity-100 inline-flex items-center justify-center transition-colors',
+                      day_selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                      day_today: 'bg-accent text-accent-foreground font-semibold',
+                      day_outside: 'text-muted-foreground opacity-40',
+                      day_disabled: 'text-muted-foreground opacity-30',
+                      day_hidden: 'invisible',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           )}
         />
       </div>
@@ -685,7 +735,6 @@ export default function TimeTracker() {
                               setShowMobileForm(true);
                             }}
                           >
-                            <Plus className="h-4 w-4 mr-1" />
                             {tt.logHours}
                           </Button>
                         </div>
@@ -706,7 +755,6 @@ export default function TimeTracker() {
                               setShowMobileForm(true);
                             }}
                           >
-                            <Plus className="h-4 w-4 mr-1" />
                             {tt.logHours}
                           </Button>
                           <span className="text-sm text-muted-foreground ml-auto">
@@ -818,8 +866,7 @@ export default function TimeTracker() {
       {!!companyId && (
         <div className="fixed bottom-6 right-5 z-50 lg:hidden">
           <Button
-            size="lg"
-            className="h-14 w-14 rounded-full shadow-xl touch-manipulation"
+            className="h-14 w-14 p-0 rounded-full shadow-xl touch-manipulation"
             onClick={() => {
               setEditingEntry(null);
               reset({ projectId: null, date: selectedDate, hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '' });
@@ -832,12 +879,11 @@ export default function TimeTracker() {
         </div>
       )}
 
-      {/* ===== Mobile Form Dialog (bottom sheet style) ===== */}
+      {/* ===== Mobile Form Dialog ===== */}
       <Dialog open={showMobileForm} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
-        <DialogContent className="lg:hidden p-0 gap-0 max-h-[92dvh] flex flex-col w-full max-w-full sm:max-w-lg rounded-t-2xl rounded-b-none sm:rounded-2xl fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto translate-y-0 sm:translate-y-0 sm:mx-auto">
+        <DialogContent className="p-0 gap-0 max-h-[90dvh] flex flex-col w-[calc(100vw-2rem)] sm:w-full max-w-lg rounded-2xl sm:rounded-2xl">
           <DialogHeader className="px-5 pt-5 pb-3 border-b shrink-0">
-            <DialogTitle className="text-base font-semibold flex items-center gap-2">
-              <Plus className="h-4 w-4" />
+            <DialogTitle className="text-base font-semibold">
               {editingEntry ? tt.editEntry : tt.newEntry}
             </DialogTitle>
           </DialogHeader>
