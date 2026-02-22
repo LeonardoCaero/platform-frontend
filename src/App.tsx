@@ -3,10 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useSSE } from '@/hooks/useSSE';
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -27,6 +28,17 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/**
+ * Inner component that lives inside AuthProvider so it can access
+ * useAuth. It opens a single SSE connection for the whole app
+ * whenever the user is authenticated.
+ */
+function AppRealtimeLayer({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  useSSE(isAuthenticated);
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -36,6 +48,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <AppRealtimeLayer>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<Login />} />
@@ -155,6 +168,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </AppRealtimeLayer>
           </AuthProvider>
         </BrowserRouter>
         </TooltipProvider>

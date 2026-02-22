@@ -54,6 +54,14 @@ const translations = {
       validHours: 'Minimum 0.01 hours',
       validDate: 'Date is required',
     },
+    notifications: {
+      invitationTitle: (company: string) => `📬 New invitation from ${company}`,
+      invitationDesc: 'Open the notification bell to accept or decline.',
+      timeEntryCreated: (user: string, hours: number, project: string | null) =>
+        `⏱ ${user} logged ${hours}h${project ? ` · ${project}` : ''}`,
+      timeEntryUpdated: (user: string, hours: number, project: string | null) =>
+        `✏️ ${user} edited an entry ${hours}h${project ? ` · ${project}` : ''}`,
+    },
   },
   es: {
     nav: {
@@ -107,6 +115,14 @@ const translations = {
       validTitle: 'El titulo es obligatorio',
       validHours: 'Minimo 0.01 horas',
       validDate: 'La fecha es obligatoria',
+    },
+    notifications: {
+      invitationTitle: (company: string) => `📬 Nueva invitación de ${company}`,
+      invitationDesc: 'Abre el icono de notificaciones para aceptar o rechazar.',
+      timeEntryCreated: (user: string, hours: number, project: string | null) =>
+        `⏱ ${user} ha imputado ${hours}h${project ? ` · ${project}` : ''}`,
+      timeEntryUpdated: (user: string, hours: number, project: string | null) =>
+        `✏️ ${user} ha editado un apunte ${hours}h${project ? ` · ${project}` : ''}`,
     },
   },
 } as const;

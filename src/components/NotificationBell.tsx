@@ -18,7 +18,7 @@ export function NotificationBell() {
   const { data: invitations = [] } = useQuery({
     queryKey: ['pending-invitations'],
     queryFn: invitationsService.getPending,
-    refetchInterval: 30_000,
+    refetchInterval: 5 * 60_000, // SSE handles real-time; poll every 5 min as fallback
     staleTime: 10_000,
   });
 
