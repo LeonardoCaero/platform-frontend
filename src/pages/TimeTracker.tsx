@@ -917,7 +917,10 @@ export default function TimeTracker() {
 
       {/* ===== Mobile Form Dialog ===== */}
       <Dialog open={showMobileForm} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
-        <DialogContent className="p-0 gap-0 max-h-[90dvh] flex flex-col w-[calc(100vw-2rem)] sm:w-full max-w-lg rounded-2xl sm:rounded-2xl">
+        <DialogContent
+          className="p-0 gap-0 max-h-[90dvh] flex flex-col w-[calc(100vw-2rem)] sm:w-full max-w-lg rounded-2xl sm:rounded-2xl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader className="px-5 pt-5 pb-3 border-b shrink-0">
             <DialogTitle className="text-base font-semibold">
               {editingEntry ? tt.editEntry : tt.newEntry}

@@ -1,37 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { companiesService } from '@/services/companies.service';
-import { Building2, Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, Plus, UserPlus } from 'lucide-react';
-import { useEffect } from 'react';
-
-interface InviteMember {
-  email: string;
-  roleId: string;
-  inviteMessage?: string;
-}
+import { companyMembersService } from '@/services/company-members.service';
+import { usersService } from '@/services/users.service';
+import type { PlatformUser } from '@/services/users.service';
+import { Building2, Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Check, Search, UserX, Users } from 'lucide-react';
 
 interface CompanyFormData {
   name: string;
@@ -71,13 +55,30 @@ export default function CreateCompany() {
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
 
-  // Step 2: Invite Members
-  const [inviteMembers, setInviteMembers] = useState<InviteMember[]>([]);
-  const [newMember, setNewMember] = useState<InviteMember>({
-    email: '',
-    roleId: 'member',
-    inviteMessage: '',
+  // Step 2: Select members
+  const [selectedUsers, setSelectedUsers] = useState<PlatformUser[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [debouncedUserSearch, setDebouncedUserSearch] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedUserSearch(userSearch), 300);
+    return () => clearTimeout(t);
+  }, [userSearch]);
+
+  const { data: platformUsers = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['platform-users', debouncedUserSearch],
+    queryFn: () => usersService.listUsers(debouncedUserSearch || undefined),
+    enabled: currentStep === 2,
   });
+
+  const getUserInitials = (fullName: string) =>
+    fullName.trim().split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase() || '?';
+
+  const toggleUser = (u: PlatformUser) => {
+    setSelectedUsers((prev) =>
+      prev.some((x) => x.id === u.id) ? prev.filter((x) => x.id !== u.id) : [...prev, u]
+    );
+  };
 
   // Auto-generate slug
   useEffect(() => {
@@ -117,34 +118,6 @@ export default function CreateCompany() {
     setCompanyData((prev) => ({ ...prev, slug: formatted }));
   };
 
-  const handleAddMember = () => {
-    if (!newMember.email) {
-      toast({
-        title: 'Email required',
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Check for duplicates
-    if (inviteMembers.some((m) => m.email === newMember.email)) {
-      toast({
-        title: 'Duplicate email',
-        description: 'This email is already in the list',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setInviteMembers([...inviteMembers, newMember]);
-    setNewMember({ email: '', roleId: 'member', inviteMessage: '' });
-  };
-
-  const handleRemoveMember = (index: number) => {
-    setInviteMembers(inviteMembers.filter((_, i) => i !== index));
-  };
-
   const canProceedStep1 = companyData.name && companyData.slug && slugAvailable === true;
 
   const handleNext = () => {
@@ -173,9 +146,15 @@ export default function CreateCompany() {
         description: companyData.description || undefined,
       });
 
+      if (selectedUsers.length > 0) {
+        await Promise.allSettled(
+          selectedUsers.map((u) => companyMembersService.inviteMember(company.id, { userId: u.id }))
+        );
+      }
+
       toast({
         title: 'Company created!',
-        description: `${company.name} has been successfully created${inviteMembers.length > 0 ? `. Invitations sent to ${inviteMembers.length} member(s).` : '.'}`,
+        description: `${company.name} has been successfully created${selectedUsers.length > 0 ? `. ${selectedUsers.length} member(s) added.` : '.'}`,
       });
 
       navigate(`/companies/${company.id}`);
@@ -188,26 +167,6 @@ export default function CreateCompany() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const getRoleBadgeColor = (roleId: string) => {
-    const colors: Record<string, string> = {
-      owner: 'bg-red-100 text-red-800',
-      admin: 'bg-orange-100 text-orange-800',
-      manager: 'bg-blue-100 text-blue-800',
-      member: 'bg-gray-100 text-gray-800',
-    };
-    return colors[roleId] || colors.member;
-  };
-
-  const getRoleLabel = (roleId: string) => {
-    const labels: Record<string, string> = {
-      owner: 'Owner',
-      admin: 'Admin',
-      manager: 'Manager',
-      member: 'Member',
-    };
-    return labels[roleId] || 'Member';
   };
 
   if (!hasGlobalPermission('COMPANY:CREATE')) {
@@ -370,110 +329,85 @@ export default function CreateCompany() {
             <CardHeader>
               <CardTitle>Invite Team Members</CardTitle>
               <CardDescription>
-                Add team members to your company (optional - you can skip this step)
+                Add members from the platform to your company (optional — you can skip this step)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Add Member Form */}
-              <div className="rounded-lg border p-4 space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <UserPlus className="h-5 w-5" />
-                  <h3 className="font-semibold">Add Member</h3>
-                </div>
-                
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="memberEmail">Email</Label>
-                    <Input
-                      id="memberEmail"
-                      type="email"
-                      placeholder="email@example.com"
-                      value={newMember.email}
-                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="memberRole">Role</Label>
-                    <Select
-                      value={newMember.roleId}
-                      onValueChange={(value) => setNewMember({ ...newMember, roleId: value })}
-                    >
-                      <SelectTrigger id="memberRole">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
-                        <SelectItem value="member">Member</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="inviteMessage">Personal Message (optional)</Label>
-                  <Textarea
-                    id="inviteMessage"
-                    placeholder="Welcome to the team!"
-                    value={newMember.inviteMessage}
-                    onChange={(e) => setNewMember({ ...newMember, inviteMessage: e.target.value })}
-                    rows={2}
-                  />
-                </div>
-
-                <Button onClick={handleAddMember} className="w-full" variant="outline">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Member
-                </Button>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  className="pl-9"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
               </div>
 
-              {/* Members List */}
-              {inviteMembers.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-2">Team Members ({inviteMembers.length})</h3>
-                  <div className="rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {inviteMembers.map((member, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{member.email}</TableCell>
-                            <TableCell>
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getRoleBadgeColor(member.roleId)}`}>
-                                {getRoleLabel(member.roleId)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+              {/* Users list */}
+              <div className="rounded-lg border divide-y max-h-72 overflow-y-auto">
+                {usersLoading ? (
+                  <div className="p-3 space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="space-y-1 flex-1">
+                          <Skeleton className="h-3 w-32" />
+                          <Skeleton className="h-3 w-24" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : platformUsers.filter((u) => u.id !== user?.id).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
+                    <UserX className="h-8 w-8" />
+                    <p className="text-sm">
+                      {userSearch ? 'No users found matching your search' : 'No users available'}
+                    </p>
+                  </div>
+                ) : (
+                  platformUsers
+                    .filter((u) => u.id !== user?.id)
+                    .map((u) => {
+                      const isSelected = selectedUsers.some((x) => x.id === u.id);
+                      return (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent transition-colors ${
+                            isSelected ? 'bg-primary/10 hover:bg-primary/15' : ''
+                          }`}
+                          onClick={() => toggleUser(u)}
+                        >
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarImage src={u.avatar} />
+                            <AvatarFallback className="text-xs">{getUserInitials(u.fullName)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{u.fullName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                          {isSelected && <Check className="h-4 w-4 text-primary shrink-0" />}
+                        </button>
+                      );
+                    })
+                )}
+              </div>
+
+              {/* Selected summary */}
+              {selectedUsers.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {selectedUsers.length} member{selectedUsers.length !== 1 ? 's' : ''} selected
+                </p>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={handleBack}>
                   <ChevronLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
                 <Button onClick={handleNext}>
-                  Next
+                  {selectedUsers.length > 0 ? `Next (${selectedUsers.length} selected)` : 'Skip'}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -517,36 +451,28 @@ export default function CreateCompany() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold">
-                    Team Members {inviteMembers.length > 0 && `(${inviteMembers.length})`}
+                    Team Members {selectedUsers.length > 0 && `(${selectedUsers.length})`}
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => setCurrentStep(2)}>
                     Edit
                   </Button>
                 </div>
-                {inviteMembers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No team members to invite</p>
+                {selectedUsers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No team members selected</p>
                 ) : (
-                  <div className="rounded-lg border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Role</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {inviteMembers.map((member, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{member.email}</TableCell>
-                            <TableCell>
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getRoleBadgeColor(member.roleId)}`}>
-                                {getRoleLabel(member.roleId)}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  <div className="rounded-lg border divide-y">
+                    {selectedUsers.map((u) => (
+                      <div key={u.id} className="flex items-center gap-3 px-3 py-2.5">
+                        <Avatar className="h-7 w-7 shrink-0">
+                          <AvatarImage src={u.avatar} />
+                          <AvatarFallback className="text-xs">{getUserInitials(u.fullName)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{u.fullName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
