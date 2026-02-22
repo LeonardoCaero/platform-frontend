@@ -58,7 +58,7 @@ type ViewType = 'daily' | 'weekly' | 'monthly';
 export default function TimeTracker() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, selectedCompany, isOwnerOf } = useAuth();
+  const { user, selectedCompany, isOwnerOf, isPlatformAdmin } = useAuth();
   const { t, language } = useLanguage();
   const tt = t.timeTracker;
   const locale = language === 'es' ? es : enUS;
@@ -89,6 +89,7 @@ export default function TimeTracker() {
 
   const companyId = selectedCompany?.id ?? '';
   const isOwner = isOwnerOf(companyId);
+  const canManageAll = isOwner || isPlatformAdmin;
 
   const getDateRange = () => {
     switch (view) {
@@ -123,6 +124,22 @@ export default function TimeTracker() {
     enabled: !!companyId,
   });
   const entries = entriesData?.data || [];
+
+  // Parallel query: own entries for the same range (only fetched when user can see others' entries)
+  const { data: myEntriesData } = useQuery({
+    queryKey: ['time-entries', companyId, format(rangeStart, 'yyyy-MM-dd'), format(rangeEnd, 'yyyy-MM-dd'), 'mine'],
+    queryFn: () =>
+      timeEntriesService.list({
+        companyId,
+        startDate: format(rangeStart, 'yyyy-MM-dd'),
+        endDate: format(rangeEnd, 'yyyy-MM-dd'),
+        page: 1,
+        limit: 500,
+        userId: user?.id,
+      }),
+    enabled: !!companyId && canManageAll,
+  });
+  const myEntries = myEntriesData?.data || [];
 
   const createMutation = useMutation({
     mutationFn: timeEntriesService.create,
@@ -311,6 +328,8 @@ export default function TimeTracker() {
 
   const EntryCard = ({ entry, compact = false }: { entry: TimeEntry; compact?: boolean }) => {
     const isOwnEntry = entry.userId === user?.id;
+    const canDelete = isOwnEntry || canManageAll;
+    const canEdit = isOwnEntry || isPlatformAdmin;
     const totalMins = Math.round(Number(entry.hours) * 60);
     const hDisplay = Math.floor(totalMins / 60);
     const mDisplay = totalMins % 60;
@@ -319,7 +338,7 @@ export default function TimeTracker() {
     <div className={cn(
       'flex items-start gap-3 rounded-xl border bg-card transition-colors group',
       compact ? 'p-3' : 'p-4',
-      isOwner && isOwnEntry && 'border-primary/40 bg-primary/5'
+      isOwnEntry && 'border-primary/40 bg-primary/5'
     )}>
       {/* Color bar */}
       <div
@@ -334,8 +353,8 @@ export default function TimeTracker() {
               {entry.project.name}
             </Badge>
           )}
-          {isOwner && isOwnEntry && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">Me</Badge>
+          {canManageAll && isOwnEntry && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{tt.me}</Badge>
           )}
         </div>
         {entry.description && !compact && (
@@ -344,28 +363,32 @@ export default function TimeTracker() {
         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span className="font-semibold text-foreground text-sm">{durationLabel}</span>
           {entry.startTime && entry.endTime && <span className="tabular-nums">{entry.startTime} – {entry.endTime}</span>}
-          {isOwner && entry.user && !isOwnEntry && (
+          {canManageAll && entry.user && !isOwnEntry && (
             <span className="text-muted-foreground">{entry.user.fullName}</span>
           )}
         </div>
       </div>
-      {(!isOwner || isOwnEntry) && (
+      {(canEdit || canDelete) && (
         /* Always visible on mobile, hover-only on desktop */
         <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-          <Button
-            variant="ghost" size="icon"
-            className="h-10 w-10 sm:h-7 sm:w-7 touch-manipulation"
-            onClick={() => openEditEntry(entry)}
-          >
-            <Pencil className="h-4 w-4 sm:h-3 sm:w-3" />
-          </Button>
-          <Button
-            variant="ghost" size="icon"
-            className="h-10 w-10 sm:h-7 sm:w-7 touch-manipulation"
-            onClick={() => setDeletingEntry(entry)}
-          >
-            <Trash2 className="h-4 w-4 sm:h-3 sm:w-3 text-destructive" />
-          </Button>
+          {canEdit && (
+            <Button
+              variant="ghost" size="icon"
+              className="h-10 w-10 sm:h-7 sm:w-7 touch-manipulation"
+              onClick={() => openEditEntry(entry)}
+            >
+              <Pencil className="h-4 w-4 sm:h-3 sm:w-3" />
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="ghost" size="icon"
+              className="h-10 w-10 sm:h-7 sm:w-7 touch-manipulation"
+              onClick={() => setDeletingEntry(entry)}
+            >
+              <Trash2 className="h-4 w-4 sm:h-3 sm:w-3 text-destructive" />
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -602,10 +625,23 @@ export default function TimeTracker() {
               <p className="text-sm text-muted-foreground mt-0.5">{selectedCompany.name}</p>
             )}
           </div>
-          <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2 shrink-0">
-            <Clock className="h-4 w-4 text-primary" />
-            <span className="font-bold text-lg text-foreground leading-none">{totalHours.toFixed(1)}h</span>
-            <span className="text-xs text-muted-foreground hidden sm:inline">{tt.subtitle}</span>
+          <div className="flex items-center gap-3 shrink-0">
+            {canManageAll && (
+              <div className="text-right">
+                <p className="text-[11px] text-muted-foreground leading-none mb-0.5">{tt.myHours}</p>
+                <p className="font-bold text-base text-foreground leading-none">
+                  {myEntries.reduce((s, e) => s + Number(e.hours), 0).toFixed(1)}h
+                </p>
+              </div>
+            )}
+            {canManageAll && <div className="h-8 w-px bg-border" />}
+            <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">
+              <Clock className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-[11px] text-muted-foreground leading-none mb-0.5">{canManageAll ? tt.total : tt.subtitle}</p>
+                <p className="font-bold text-base text-foreground leading-none">{totalHours.toFixed(1)}h</p>
+              </div>
+            </div>
           </div>
         </div>
 

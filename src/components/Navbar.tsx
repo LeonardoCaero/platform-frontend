@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -19,6 +20,8 @@ import { CompanySelector } from '@/components/CompanySelector';
 export function Navbar() {
   const { user, logout, isPlatformAdmin } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  const n = t.nav;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
 
@@ -49,7 +52,7 @@ export function Navbar() {
             {/* Logo */}
             <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
               <LayoutDashboard className="h-6 w-6 text-primary" />
-              <span className="text-xl font-semibold text-foreground hidden sm:block">Dashboard</span>
+              <span className="text-xl font-semibold text-foreground hidden sm:block">{n.dashboard}</span>
             </Link>
 
             {/* Company Selector - Center (desktop) */}
@@ -62,13 +65,13 @@ export function Navbar() {
               <Button variant="ghost" asChild>
                 <Link to="/companies" className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  Companies
+                  {n.companies}
                 </Link>
               </Button>
               <Button variant="ghost" asChild>
                 <Link to="/my-permission-requests" className="flex items-center gap-2">
                   <Key className="h-4 w-4" />
-                  My Requests
+                  {n.myRequests}
                 </Link>
               </Button>
               {isPlatformAdmin && (
@@ -76,19 +79,19 @@ export function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">
                       <ShieldAlert className="h-4 w-4" />
-                      Admin Panel
+                      {n.adminPanel}
                       <ChevronDown className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/company-requests">Company Requests</Link>
+                      <Link to="/admin/company-requests">{n.companyRequests}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/permission-requests">Permission Requests</Link>
+                      <Link to="/admin/permission-requests">{n.permissionRequests}</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/admin/permissions">Manage Permissions</Link>
+                      <Link to="/admin/permissions">{n.managePermissions}</Link>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -112,13 +115,13 @@ export function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      Profile
+                      {n.profile}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive">
                     <LogOut className="h-4 w-4" />
-                    Logout
+                    {n.logout}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -186,7 +189,7 @@ export function Navbar() {
             onClick={closeMobileMenu}
           >
             <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-            Companies
+            {n.companies}
           </Link>
           <Link
             to="/my-permission-requests"
@@ -194,7 +197,7 @@ export function Navbar() {
             onClick={closeMobileMenu}
           >
             <Key className="h-4 w-4 shrink-0 text-muted-foreground" />
-            My Requests
+            {n.myRequests}
           </Link>
           <Link
             to="/time-tracker"
@@ -202,7 +205,7 @@ export function Navbar() {
             onClick={closeMobileMenu}
           >
             <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
-            Time Tracker
+            {n.timeTracker}
           </Link>
           <Link
             to="/profile"
@@ -210,7 +213,7 @@ export function Navbar() {
             onClick={closeMobileMenu}
           >
             <User className="h-4 w-4 shrink-0 text-muted-foreground" />
-            Profile
+            {n.profile}
           </Link>
 
           {isPlatformAdmin && (
@@ -221,7 +224,7 @@ export function Navbar() {
               >
                 <span className="flex items-center gap-3">
                   <ShieldAlert className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  Admin Panel
+                  {n.adminPanel}
                 </span>
                 <ChevronRight
                   className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
@@ -236,21 +239,21 @@ export function Navbar() {
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                     onClick={closeMobileMenu}
                   >
-                    Company Requests
+                    {n.companyRequests}
                   </Link>
                   <Link
                     to="/admin/permission-requests"
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                     onClick={closeMobileMenu}
                   >
-                    Permission Requests
+                    {n.permissionRequests}
                   </Link>
                   <Link
                     to="/admin/permissions"
                     className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
                     onClick={closeMobileMenu}
                   >
-                    Manage Permissions
+                    {n.managePermissions}
                   </Link>
                 </div>
               )}
@@ -261,7 +264,7 @@ export function Navbar() {
         {/* Drawer Footer */}
         <div className="border-t px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">Appearance</span>
+            <span className="text-sm font-medium text-foreground">{n.appearance}</span>
             <div className="flex items-center gap-1">
               <ThemeToggle />
               <LanguageToggle />
@@ -275,7 +278,7 @@ export function Navbar() {
             className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            Logout
+            {n.logout}
           </button>
         </div>
       </div>

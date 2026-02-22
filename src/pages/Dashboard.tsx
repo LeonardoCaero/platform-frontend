@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, User, Package, Settings, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -47,41 +48,43 @@ function ModuleCard({ title, description, icon, onClick, disabled }: ModuleCardP
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  const d = t.dashboard;
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!
+            {d.welcomeBack}, {user?.fullName?.split(' ')[0] || 'User'}!
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Select a module to get started
+            {d.subtitle}
           </p>
         </div>
 
         <div className="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2">
           <ModuleCard
-            title="Time Tracker"
-            description="Track your work hours and daily activities"
+            title={d.timeTrackerTitle}
+            description={d.timeTrackerDesc}
             icon={<Clock className="h-8 w-8" />}
             onClick={() => navigate('/time-tracker')}
           />
           <ModuleCard
-            title="Profile"
-            description="Manage your profile and settings"
+            title={d.profileTitle}
+            description={d.profileDesc}
             icon={<User className="h-8 w-8" />}
             onClick={() => navigate('/profile')}
           />
           <ModuleCard
-            title="Permission Requests"
-            description="Request permissions and view your requests"
+            title={d.permissionsTitle}
+            description={d.permissionsDesc}
             icon={<Key className="h-8 w-8" />}
             onClick={() => navigate('/my-permission-requests')}
           />
           <ModuleCard
-            title="Coming Soon"
-            description="More modules coming soon"
+            title={d.comingSoonTitle}
+            description={d.comingSoonDesc}
             icon={<Package className="h-8 w-8" />}
             disabled
           />

@@ -13,6 +13,8 @@ const translations = {
       profile: 'Profile',
       logout: 'Logout',
       theme: 'Theme',
+      appearance: 'Appearance',
+      dashboard: 'Dashboard',
     },
     timeTracker: {
       title: 'Time Tracker',
@@ -53,14 +55,20 @@ const translations = {
       validTitle: 'Title is required',
       validHours: 'Minimum 0.01 hours',
       validDate: 'Date is required',
+      me: 'Me',
+      myHours: 'My hours',
     },
-    notifications: {
-      invitationTitle: (company: string) => `📬 New invitation from ${company}`,
-      invitationDesc: 'Open the notification bell to accept or decline.',
-      timeEntryCreated: (user: string, hours: number, project: string | null) =>
-        `⏱ ${user} logged ${hours}h${project ? ` · ${project}` : ''}`,
-      timeEntryUpdated: (user: string, hours: number, project: string | null) =>
-        `✏️ ${user} edited an entry ${hours}h${project ? ` · ${project}` : ''}`,
+    dashboard: {
+      welcomeBack: 'Welcome back',
+      subtitle: 'Select a module to get started',
+      timeTrackerTitle: 'Time Tracker',
+      timeTrackerDesc: 'Track your work hours and daily activities',
+      profileTitle: 'Profile',
+      profileDesc: 'Manage your profile and settings',
+      permissionsTitle: 'Permission Requests',
+      permissionsDesc: 'Request permissions and view your requests',
+      comingSoonTitle: 'Coming Soon',
+      comingSoonDesc: 'More modules coming soon',
     },
   },
   es: {
@@ -75,6 +83,8 @@ const translations = {
       profile: 'Perfil',
       logout: 'Cerrar sesion',
       theme: 'Tema',
+      appearance: 'Apariencia',
+      dashboard: 'Inicio',
     },
     timeTracker: {
       title: 'Control de horas',
@@ -115,14 +125,20 @@ const translations = {
       validTitle: 'El titulo es obligatorio',
       validHours: 'Minimo 0.01 horas',
       validDate: 'La fecha es obligatoria',
+      me: 'Yo',
+      myHours: 'Mis horas',
     },
-    notifications: {
-      invitationTitle: (company: string) => `📬 Nueva invitación de ${company}`,
-      invitationDesc: 'Abre el icono de notificaciones para aceptar o rechazar.',
-      timeEntryCreated: (user: string, hours: number, project: string | null) =>
-        `⏱ ${user} ha imputado ${hours}h${project ? ` · ${project}` : ''}`,
-      timeEntryUpdated: (user: string, hours: number, project: string | null) =>
-        `✏️ ${user} ha editado un apunte ${hours}h${project ? ` · ${project}` : ''}`,
+    dashboard: {
+      welcomeBack: 'Bienvenido de nuevo',
+      subtitle: 'Selecciona un modulo para empezar',
+      timeTrackerTitle: 'Control de horas',
+      timeTrackerDesc: 'Registra tus horas de trabajo y actividades diarias',
+      profileTitle: 'Perfil',
+      profileDesc: 'Gestiona tu perfil y ajustes',
+      permissionsTitle: 'Solicitudes de permiso',
+      permissionsDesc: 'Solicita permisos y consulta tus solicitudes',
+      comingSoonTitle: 'Proximamente',
+      comingSoonDesc: 'Mas modulos en camino',
     },
   },
 } as const;
