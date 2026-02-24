@@ -41,14 +41,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { timeEntriesService } from '@/services/time-entries.service';
 import { projectsService } from '@/services/projects.service';
+import { clientsService } from '@/services/clients.service';
+import { categoriesService } from '@/services/categories.service';
+import { companyMembersService } from '@/services/company-members.service';
 import type { TimeEntry } from '@/types/time-tracker.types';
-import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus, CalendarIcon } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus, CalendarIcon, Users, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const QUICK_HOURS = [1, 2, 4, 6, 8];
@@ -72,6 +76,10 @@ export default function TimeTracker() {
     endTime: z.string().optional().nullable(),
     title: z.string().min(1, tt.validTitle).max(200),
     description: z.string().max(2000).optional().nullable(),
+    isOvertime: z.boolean().default(false),
+    clientId: z.string().optional().nullable(),
+    clientSiteId: z.string().optional().nullable(),
+    categoryId: z.string().optional().nullable(),
   }).refine(d => d.hours > 0 || d.minutes > 0, { message: tt.validHours, path: ['hours'] });
 
   type TimeEntryFormData = z.infer<typeof timeEntrySchema>;
@@ -84,6 +92,8 @@ export default function TimeTracker() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showMobileForm, setShowMobileForm] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [monthViewMode, setMonthViewMode] = useState<'all' | 'mine'>('all');
+  const [targetUserId, setTargetUserId] = useState<string | null>(null);
 
   const dayStripRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +151,27 @@ export default function TimeTracker() {
   });
   const myEntries = myEntriesData?.data || [];
 
+  const { data: membersData } = useQuery({
+    queryKey: ['members', companyId],
+    queryFn: () => companyMembersService.getCompanyMembers(companyId),
+    enabled: !!companyId && canManageAll,
+  });
+  const members = membersData ?? [];
+
+  const { data: clientsQueryData } = useQuery({
+    queryKey: ['clients', companyId],
+    queryFn: () => clientsService.list({ companyId, page: 1, limit: 200 }),
+    enabled: !!companyId,
+  });
+  const companyClients = clientsQueryData?.data ?? [];
+
+  const { data: categoriesQueryData } = useQuery({
+    queryKey: ['time-entry-categories', companyId],
+    queryFn: () => categoriesService.list({ companyId }),
+    enabled: !!companyId,
+  });
+  const companyCategories = categoriesQueryData ?? [];
+
   const createMutation = useMutation({
     mutationFn: timeEntriesService.create,
     onSuccess: () => {
@@ -193,6 +224,10 @@ export default function TimeTracker() {
       endTime: null,
       title: '',
       description: '',
+      isOvertime: false,
+      clientId: null,
+      clientSiteId: null,
+      categoryId: null,
     },
   });
 
@@ -207,7 +242,11 @@ export default function TimeTracker() {
       setValue('endTime', editingEntry.endTime ?? null);
       setValue('title', editingEntry.title);
       setValue('description', editingEntry.description ?? '');
-      setShowAdvanced(!!(editingEntry.projectId || editingEntry.startTime));
+      setValue('isOvertime', (editingEntry as any).isOvertime ?? false);
+      setValue('clientId', (editingEntry as any).clientId ?? null);
+      setValue('clientSiteId', (editingEntry as any).clientSiteId ?? null);
+      setValue('categoryId', (editingEntry as any).categoryId ?? null);
+      setShowAdvanced(!!(editingEntry.projectId || editingEntry.startTime || (editingEntry as any).clientId || (editingEntry as any).categoryId || (editingEntry as any).isOvertime));
     }
   }, [editingEntry, setValue]);
 
@@ -215,6 +254,7 @@ export default function TimeTracker() {
   const endTime = watch('endTime');
   const watchedHours = watch('hours');
   const watchedMinutes = watch('minutes');
+  const watchedClientId = watch('clientId');
 
   useEffect(() => {
     if (startTime && endTime) {
@@ -249,17 +289,22 @@ export default function TimeTracker() {
       endTime: data.endTime || null,
       title: data.title,
       description: data.description || null,
+      isOvertime: data.isOvertime ?? false,
+      clientId: data.clientId || null,
+      clientSiteId: data.clientSiteId || null,
+      categoryId: data.categoryId || null,
     };
     if (editingEntry) {
       updateMutation.mutate({ id: editingEntry.id, data: payload });
     } else {
-      createMutation.mutate({ companyId, ...payload });
+      createMutation.mutate({ companyId, ...payload, ...(targetUserId ? { targetUserId } : {}) });
     }
   };
 
   const cancelEdit = () => {
     setEditingEntry(null);
-    reset({ projectId: null, date: new Date(), hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '' });
+    setTargetUserId(null);
+    reset({ projectId: null, date: new Date(), hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '', isOvertime: false, clientId: null, clientSiteId: null, categoryId: null });
     setShowAdvanced(false);
     setShowMobileForm(false);
   };
@@ -329,7 +374,7 @@ export default function TimeTracker() {
   const EntryCard = ({ entry, compact = false }: { entry: TimeEntry; compact?: boolean }) => {
     const isOwnEntry = entry.userId === user?.id;
     const canDelete = isOwnEntry || canManageAll;
-    const canEdit = isOwnEntry || isPlatformAdmin;
+    const canEdit = isOwnEntry || canManageAll;
     const totalMins = Math.round(Number(entry.hours) * 60);
     const hDisplay = Math.floor(totalMins / 60);
     const mDisplay = totalMins % 60;
@@ -353,6 +398,17 @@ export default function TimeTracker() {
               {entry.project.name}
             </Badge>
           )}
+          {(entry as any).isOvertime && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-orange-500 text-orange-600 dark:text-orange-400">
+              <AlertCircle className="h-2.5 w-2.5 mr-0.5" />{tt.overtime}
+            </Badge>
+          )}
+          {(entry as any).category && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+              <span className="h-2 w-2 rounded-full mr-1 inline-block" style={{ backgroundColor: (entry as any).category.color ?? '#888' }} />
+              {(entry as any).category.name}
+            </Badge>
+          )}
           {canManageAll && isOwnEntry && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{tt.me}</Badge>
           )}
@@ -363,8 +419,14 @@ export default function TimeTracker() {
         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span className="font-semibold text-foreground text-sm">{durationLabel}</span>
           {entry.startTime && entry.endTime && <span className="tabular-nums">{entry.startTime} – {entry.endTime}</span>}
+          {(entry as any).client && (
+            <span className="text-muted-foreground">{(entry as any).client.name}{(entry as any).clientSite ? ` · ${(entry as any).clientSite.name}` : ''}</span>
+          )}
           {canManageAll && entry.user && !isOwnEntry && (
             <span className="text-muted-foreground">{entry.user.fullName}</span>
+          )}
+          {(entry as any).loggedByUser && (entry as any).loggedByUser.id !== entry.userId && (
+            <span className="text-muted-foreground/70 flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{tt.loggedBy} {(entry as any).loggedByUser.fullName}</span>
           )}
         </div>
       </div>
@@ -422,6 +484,25 @@ export default function TimeTracker() {
   // ---------- Entry Form ----------
   const EntryForm = ({ inDialog = false }: { inDialog?: boolean }) => (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Log For (owner/admin only) */}
+      {canManageAll && (
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />{tt.logFor}</Label>
+          <Select value={targetUserId || '_self'} onValueChange={(v) => setTargetUserId(v === '_self' ? null : v)}>
+            <SelectTrigger className={cn('text-base', inDialog ? 'h-12' : 'h-10')}>
+              <SelectValue placeholder={tt.myself} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_self">{tt.myself}</SelectItem>
+              {members.filter(m => m.user?.id !== user?.id).map((m) => {
+                const displayName = (m.user as any).fullName || [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.email;
+                return <SelectItem key={m.user?.id} value={m.user?.id ?? ''}>{displayName}</SelectItem>;
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Title */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">{tt.whatDidYouDo}</Label>
@@ -569,6 +650,92 @@ export default function TimeTracker() {
               <Label className="text-sm">{tt.endTime}</Label>
               <Input type="time" className={cn('text-base', inDialog ? 'h-12' : 'h-10')} {...register('endTime')} />
             </div>
+          </div>
+          {/* Client */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">{tt.client}</Label>
+            <Controller
+              name="clientId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value || '_none'} onValueChange={(v) => { field.onChange(v === '_none' ? null : v); setValue('clientSiteId', null); }}>
+                  <SelectTrigger className={cn('text-base', inDialog ? 'h-12' : 'h-10')}>
+                    <SelectValue placeholder={tt.noClient} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">{tt.noClient}</SelectItem>
+                    {companyClients.filter(c => c.isActive).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          {/* Client Site */}
+          {watchedClientId && (() => {
+            const selectedClient = companyClients.find(c => c.id === watchedClientId);
+            const activeSites = selectedClient?.sites?.filter(s => s.isActive) ?? [];
+            if (activeSites.length === 0) return null;
+            return (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">{tt.clientSite}</Label>
+                <Controller
+                  name="clientSiteId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value || '_none'} onValueChange={(v) => field.onChange(v === '_none' ? null : v)}>
+                      <SelectTrigger className={cn('text-base', inDialog ? 'h-12' : 'h-10')}>
+                        <SelectValue placeholder={tt.noSite} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">{tt.noSite}</SelectItem>
+                        {activeSites.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}{s.city ? ` (${s.city})` : ''}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            );
+          })()}
+          {/* Category */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">{tt.category}</Label>
+            <Controller
+              name="categoryId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value || '_none'} onValueChange={(v) => field.onChange(v === '_none' ? null : v)}>
+                  <SelectTrigger className={cn('text-base', inDialog ? 'h-12' : 'h-10')}>
+                    <SelectValue placeholder={tt.noCategory} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">{tt.noCategory}</SelectItem>
+                    {companyCategories.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        <span className="flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color ?? '#888' }} />
+                          {c.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          {/* Overtime toggle */}
+          <div className="flex items-center gap-2">
+            <Controller
+              name="isOvertime"
+              control={control}
+              render={({ field }) => (
+                <Switch checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label className="text-sm cursor-pointer">{tt.overtimeToggle}</Label>
           </div>
         </CollapsibleContent>
       </Collapsible>
@@ -847,6 +1014,24 @@ export default function TimeTracker() {
                   {/* MONTHLY */}
                   {view === 'monthly' && (
                     <div>
+                      {/* View mode toggle: owner/admin see all or just their own */}
+                      {canManageAll && (
+                        <div className="flex items-center justify-end mb-3 gap-2">
+                          <span className="text-xs text-muted-foreground">{tt.viewMode}:</span>
+                          <div className="flex rounded-lg border overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setMonthViewMode('all')}
+                              className={cn('px-3 py-1.5 text-xs font-medium transition-colors', monthViewMode === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
+                            >{tt.showAll}</button>
+                            <button
+                              type="button"
+                              onClick={() => setMonthViewMode('mine')}
+                              className={cn('px-3 py-1.5 text-xs font-medium transition-colors border-l', monthViewMode === 'mine' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent')}
+                            >{tt.showMine}</button>
+                          </div>
+                        </div>
+                      )}
                       <div className="grid grid-cols-7 mb-1">
                         {weekDayLabels.map(d => (
                           <div key={d} className="text-center text-xs text-muted-foreground font-semibold py-1.5">{d}</div>
@@ -855,7 +1040,9 @@ export default function TimeTracker() {
                       <div className="grid grid-cols-7 gap-1">
                         {calDays.map(day => {
                           const k = format(day, 'yyyy-MM-dd');
-                          const dayEs = grouped[k] || [];
+                          const dayEs = (monthViewMode === 'mine' && canManageAll)
+                            ? (grouped[k] || []).filter(e => e.userId === user?.id)
+                            : (grouped[k] || []);
                           const total = dayEs.reduce((s, e) => s + Number(e.hours), 0);
                           const inMonth = isSameMonth(day, currentDate);
                           return (
@@ -885,9 +1072,17 @@ export default function TimeTracker() {
                       </div>
                       <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm">
                         <span className="text-muted-foreground capitalize">
-                          {entries.length} {tt.entriesIn} {format(currentDate, 'MMMM', { locale })}
+                          {(() => {
+                            const displayEntries = (monthViewMode === 'mine' && canManageAll) ? entries.filter(e => e.userId === user?.id) : entries;
+                            return `${displayEntries.length} ${tt.entriesIn} ${format(currentDate, 'MMMM', { locale })}`;
+                          })()}
                         </span>
-                        <span className="font-bold">{totalHours.toFixed(1)}h {tt.totalHours}</span>
+                        <span className="font-bold">
+                          {(() => {
+                            const displayEntries = (monthViewMode === 'mine' && canManageAll) ? entries.filter(e => e.userId === user?.id) : entries;
+                            return `${displayEntries.reduce((s, e) => s + Number(e.hours), 0).toFixed(1)}h ${tt.totalHours}`;
+                          })()}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -905,7 +1100,8 @@ export default function TimeTracker() {
             className="h-14 w-14 p-0 rounded-full shadow-xl touch-manipulation"
             onClick={() => {
               setEditingEntry(null);
-              reset({ projectId: null, date: selectedDate, hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '' });
+              reset({ projectId: null, date: selectedDate, hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '', isOvertime: false, clientId: null, clientSiteId: null, categoryId: null });
+              setTargetUserId(null);
               setShowAdvanced(false);
               setShowMobileForm(true);
             }}

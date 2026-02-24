@@ -11,17 +11,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, LayoutDashboard, Building2, Clock, ShieldAlert, Key, ChevronDown, ChevronRight } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Building2, Clock, ShieldAlert, Key, ChevronDown, ChevronRight, Briefcase } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CompanySelector } from '@/components/CompanySelector';
 
 export function Navbar() {
-  const { user, logout, isPlatformAdmin } = useAuth();
+  const { user, logout, isPlatformAdmin, isOwnerOf, selectedCompany } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const n = t.nav;
+  const canManageClients = isPlatformAdmin || (!!selectedCompany && isOwnerOf(selectedCompany.id));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
 
@@ -74,6 +75,14 @@ export function Navbar() {
                   {n.myRequests}
                 </Link>
               </Button>
+              {canManageClients && (
+                <Button variant="ghost" asChild>
+                  <Link to="/clients" className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    {n.clients}
+                  </Link>
+                </Button>
+              )}
               {isPlatformAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -207,6 +216,16 @@ export function Navbar() {
             <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
             {n.timeTracker}
           </Link>
+          {canManageClients && (
+            <Link
+              to="/clients"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              onClick={closeMobileMenu}
+            >
+              <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
+              {n.clients}
+            </Link>
+          )}
           <Link
             to="/profile"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"

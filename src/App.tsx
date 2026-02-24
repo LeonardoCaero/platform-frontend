@@ -24,6 +24,7 @@ import RequestPermission from "./pages/RequestPermission";
 import MyPermissionRequests from "./pages/MyPermissionRequests";
 import AdminPermissionRequests from "./pages/AdminPermissionRequests";
 import Permissions from "./pages/Permissions";
+import Clients from "./pages/Clients";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -162,6 +163,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Permissions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/clients"
+                element={
+                  <ProtectedRoute>
+                    <Clients />
                   </ProtectedRoute>
                 }
               />
