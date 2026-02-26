@@ -22,6 +22,7 @@ import {
   eachDayOfInterval,
   startOfDay,
   endOfDay,
+  getDay,
 } from 'date-fns';
 import { enUS, es } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -52,10 +53,8 @@ import { clientsService } from '@/services/clients.service';
 import { categoriesService } from '@/services/categories.service';
 import { companyMembersService } from '@/services/company-members.service';
 import type { TimeEntry } from '@/types/time-tracker.types';
-import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus, CalendarIcon, Users, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus, CalendarIcon, Users, AlertCircle, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const QUICK_HOURS = [1, 2, 4, 6, 8];
 
 type ViewType = 'daily' | 'weekly' | 'monthly';
 
@@ -96,6 +95,7 @@ export default function TimeTracker() {
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
 
   const dayStripRef = useRef<HTMLDivElement>(null);
+  const defaultsAppliedRef = useRef(false);
 
   const companyId = selectedCompany?.id ?? '';
   const isOwner = isOwnerOf(companyId);
@@ -165,6 +165,26 @@ export default function TimeTracker() {
   });
   const companyClients = clientsQueryData?.data ?? [];
 
+  // Apply default client/site from DB isDefault flags on new entries
+  useEffect(() => {
+    if (editingEntry) { defaultsAppliedRef.current = false; return; }
+    if (defaultsAppliedRef.current || !companyClients.length) return;
+    const defaultClient = (companyClients as any[]).find(c => c.isDefault && c.isActive);
+    if (!defaultClient) return;
+    setValue('clientId', defaultClient.id);
+    const defaultSite = defaultClient.sites?.find((s: any) => s.isDefault && s.isActive);
+    if (defaultSite) setValue('clientSiteId', defaultSite.id);
+    const d = watch('date');
+    if (d) {
+      const day = getDay(d);
+      if (day === 0 || day === 6) {
+        const hasWeekend = defaultClient.rateRules?.some((r: any) => r.isActive && r.overtimeTriggers?.includes('WEEKEND'));
+        if (hasWeekend) { setValue('isOvertime', true); setShowAdvanced(true); }
+      }
+    }
+    defaultsAppliedRef.current = true;
+  }, [editingEntry, companyClients]);
+
   const { data: categoriesQueryData } = useQuery({
     queryKey: ['time-entry-categories', companyId],
     queryFn: () => categoriesService.list({ companyId }),
@@ -177,6 +197,7 @@ export default function TimeTracker() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
       toast({ title: language === 'es' ? 'Imputacion guardada' : 'Entry saved' });
+      defaultsAppliedRef.current = false;
       reset();
       setShowAdvanced(false);
       setShowMobileForm(false);
@@ -192,6 +213,7 @@ export default function TimeTracker() {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
       toast({ title: language === 'es' ? 'Imputacion actualizada' : 'Entry updated' });
       setEditingEntry(null);
+      defaultsAppliedRef.current = false;
       reset();
       setShowAdvanced(false);
       setShowMobileForm(false);
@@ -212,6 +234,7 @@ export default function TimeTracker() {
       toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not delete entry' });
     },
   });
+
 
   const { register, handleSubmit, setValue, watch, reset, control, formState: { errors } } = useForm<TimeEntryFormData>({
     resolver: zodResolver(timeEntrySchema),
@@ -252,9 +275,8 @@ export default function TimeTracker() {
 
   const startTime = watch('startTime');
   const endTime = watch('endTime');
-  const watchedHours = watch('hours');
-  const watchedMinutes = watch('minutes');
   const watchedClientId = watch('clientId');
+  const watchedDate = watch('date');
 
   useEffect(() => {
     if (startTime && endTime) {
@@ -267,6 +289,22 @@ export default function TimeTracker() {
       }
     }
   }, [startTime, endTime, setValue]);
+
+  // Auto-set overtime when date is weekend and selected client has WEEKEND trigger
+  const applyAutoOvertime = (clientId: string | null | undefined, date: Date | undefined | null) => {
+    if (!clientId || !date) return;
+    const day = getDay(date); // 0=Sun, 6=Sat
+    if (day !== 0 && day !== 6) return;
+    const selectedClient = (companyClients as any[]).find((c) => c.id === clientId);
+    if (!selectedClient) return;
+    const hasWeekendTrigger = selectedClient.rateRules?.some(
+      (r: any) => r.isActive && r.overtimeTriggers?.includes('WEEKEND')
+    );
+    if (hasWeekendTrigger) {
+      setValue('isOvertime', true);
+      setShowAdvanced(true);
+    }
+  };
 
   // Scroll today into view when strip renders
   useEffect(() => {
@@ -304,6 +342,7 @@ export default function TimeTracker() {
   const cancelEdit = () => {
     setEditingEntry(null);
     setTargetUserId(null);
+    defaultsAppliedRef.current = false;
     reset({ projectId: null, date: new Date(), hours: 8, minutes: 0, startTime: null, endTime: null, title: '', description: '', isOvertime: false, clientId: null, clientSiteId: null, categoryId: null });
     setShowAdvanced(false);
     setShowMobileForm(false);
@@ -457,30 +496,6 @@ export default function TimeTracker() {
   );
   };
 
-  // ---------- Quick Hours Buttons ----------
-  const QuickHourButtons = () => (
-    <div className="flex gap-1.5 flex-wrap">
-      {QUICK_HOURS.map(h => {
-        const active = watchedHours === h && watchedMinutes === 0;
-        return (
-          <button
-            key={h}
-            type="button"
-            onClick={() => { setValue('hours', h); setValue('minutes', 0); }}
-            className={cn(
-              'flex-1 min-w-[2.5rem] py-2.5 rounded-lg border text-sm font-bold transition-colors touch-manipulation select-none',
-              active
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-background hover:bg-accent border-border text-foreground'
-            )}
-          >
-            {h}h
-          </button>
-        );
-      })}
-    </div>
-  );
-
   // ---------- Entry Form ----------
   const EntryForm = ({ inDialog = false }: { inDialog?: boolean }) => (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -515,10 +530,9 @@ export default function TimeTracker() {
         {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
       </div>
 
-      {/* Quick hours */}
-      <div className="space-y-2">
+      {/* Hours */}
+      <div className="space-y-1.5">
         <Label className="text-sm font-medium">{tt.hours}</Label>
-        <QuickHourButtons />
         <div className="flex items-center gap-2">
           <Input
             type="number" min="0" max="23" placeholder="0"
@@ -569,6 +583,7 @@ export default function TimeTracker() {
                       if (d) {
                         field.onChange(d);
                         setDatePickerOpen(false);
+                        applyAutoOvertime(watchedClientId, d);
                       }
                     }}
                     locale={locale}
@@ -653,12 +668,19 @@ export default function TimeTracker() {
           </div>
           {/* Client */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">{tt.client}</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">{tt.client}</Label>
+              {watchedClientId && (() => {
+                const c = (companyClients as any[]).find(x => x.id === watchedClientId);
+                if (!c?.isDefault) return null;
+                return <span className="flex items-center gap-1 text-xs text-primary"><Pin className="h-3 w-3 fill-current" /><span>Predeterminado</span></span>;
+              })()}
+            </div>
             <Controller
               name="clientId"
               control={control}
               render={({ field }) => (
-                <Select value={field.value || '_none'} onValueChange={(v) => { field.onChange(v === '_none' ? null : v); setValue('clientSiteId', null); }}>
+                <Select value={field.value || '_none'} onValueChange={(v) => { const id = v === '_none' ? null : v; field.onChange(id); setValue('clientSiteId', null); applyAutoOvertime(id, watchedDate); }}>
                   <SelectTrigger className={cn('text-base', inDialog ? 'h-12' : 'h-10')}>
                     <SelectValue placeholder={tt.noClient} />
                   </SelectTrigger>
@@ -679,7 +701,15 @@ export default function TimeTracker() {
             if (activeSites.length === 0) return null;
             return (
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">{tt.clientSite}</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">{tt.clientSite}</Label>
+                  {(() => {
+                    const siteId = watch('clientSiteId');
+                    const site = (activeSites as any[]).find(s => s.id === siteId);
+                    if (!site?.isDefault) return null;
+                    return <span className="flex items-center gap-1 text-xs text-primary"><Pin className="h-3 w-3 fill-current" /><span>Predeterminada</span></span>;
+                  })()}
+                </div>
                 <Controller
                   name="clientSiteId"
                   control={control}
@@ -743,11 +773,11 @@ export default function TimeTracker() {
       {/* Quick shortcuts */}
       <div className="flex gap-1.5">
         <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"
-          onClick={() => { setValue('date', new Date()); setValue('hours', 8); setValue('minutes', 0); }}>
+          onClick={() => { const d = new Date(); setValue('date', d); setValue('hours', 8); setValue('minutes', 0); applyAutoOvertime(watchedClientId, d); }}>
           {tt.todayShortcut}
         </Button>
         <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"
-          onClick={() => { setValue('date', subDays(new Date(), 1)); setValue('hours', 8); setValue('minutes', 0); }}>
+          onClick={() => { const d = subDays(new Date(), 1); setValue('date', d); setValue('hours', 8); setValue('minutes', 0); applyAutoOvertime(watchedClientId, d); }}>
           {tt.yesterdayShortcut}
         </Button>
         <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"

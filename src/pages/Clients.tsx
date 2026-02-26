@@ -29,7 +29,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { clientsService } from '@/services/clients.service';
 import type { Client, ClientSite, ClientRateRule, ClientRateRuleResource, OvertimeTrigger } from '@/types/clients.types';
 import {
-  Building2, ChevronDown, Loader2, MapPin, Pencil, Plus, Trash2, Euro,
+  Building2, ChevronDown, Loader2, MapPin, Pencil, Pin, Plus, Trash2, Euro,
   Clock, Users, Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -84,13 +84,12 @@ type ResourceFormData = z.infer<typeof resourceSchema>;
 export default function Clients() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { selectedCompany, isOwnerOf, isPlatformAdmin } = useAuth();
+  const { selectedCompany, isOwnerOf, isAdminOf, isPlatformAdmin } = useAuth();
   const { t, language } = useLanguage();
   const tc = t.clients;
 
   const companyId = selectedCompany?.id ?? '';
-  const isOwner = isOwnerOf(companyId);
-  const canManage = isOwner || isPlatformAdmin;
+  const canManage = isAdminOf(companyId);
 
   // If not authorized, redirect
   if (companyId && !canManage) {
@@ -134,6 +133,18 @@ export default function Clients() {
   const deleteClientMutation = useMutation({
     mutationFn: (id: string) => clientsService.delete(id),
     onSuccess: () => { invalidate(); setDeleteClientConfirm(null); toast({ title: language === 'es' ? 'Cliente eliminado' : 'Client deleted' }); },
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
+  });
+
+  const pinClientMutation = useMutation({
+    mutationFn: ({ id, isDefault }: { id: string; isDefault: boolean }) => clientsService.update(id, { isDefault }),
+    onSuccess: () => invalidate(),
+    onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
+  });
+
+  const pinSiteMutation = useMutation({
+    mutationFn: ({ id, isDefault }: { id: string; isDefault: boolean }) => clientsService.updateSite(id, { isDefault }),
+    onSuccess: () => invalidate(),
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
@@ -338,6 +349,7 @@ export default function Clients() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <CardTitle className="text-base">{client.name}</CardTitle>
+                              {client.isDefault && <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{language === 'es' ? 'Predeterminado' : 'Default'}</Badge>}
                               {!client.isActive && <Badge variant="secondary" className="text-[10px]">{tc.inactive}</Badge>}
                               {client.taxId && <span className="text-xs text-muted-foreground">{client.taxId}</span>}
                             </div>
@@ -355,6 +367,9 @@ export default function Clients() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={client.isDefault ? (language === 'es' ? 'Quitar predeterminado' : 'Remove default') : (language === 'es' ? 'Establecer predeterminado' : 'Set as default')} onClick={e => { e.stopPropagation(); pinClientMutation.mutate({ id: client.id, isDefault: !client.isDefault }); }}>
+                            <Pin className={cn('h-3.5 w-3.5', client.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openClientDialog(client); }}><Pencil className="h-3.5 w-3.5" /></Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); setDeleteClientConfirm(client); }}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                           <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', expandedClient === client.id && 'rotate-180')} />
@@ -387,11 +402,15 @@ export default function Clients() {
                                     <div className="flex items-center gap-2">
                                       <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                       <span className="text-sm font-medium">{site.name}</span>
+                                      {site.isDefault && <Badge className="text-[10px] py-0 bg-primary/10 text-primary border-primary/20">{language === 'es' ? 'Predeterminada' : 'Default'}</Badge>}
                                       {!site.isActive && <Badge variant="secondary" className="text-[10px] py-0">{tc.inactive}</Badge>}
                                     </div>
                                     {site.city && <p className="text-xs text-muted-foreground ml-5">{site.city}</p>}
                                   </div>
                                   <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" title={site.isDefault ? (language === 'es' ? 'Quitar predeterminada' : 'Remove default') : (language === 'es' ? 'Establecer predeterminada' : 'Set as default')} onClick={() => pinSiteMutation.mutate({ id: site.id, isDefault: !site.isDefault })}>
+                                      <Pin className={cn('h-3 w-3', site.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
+                                    </Button>
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSiteDialog(client.id, site)}><Pencil className="h-3 w-3" /></Button>
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteSiteConfirm(site)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                                   </div>

@@ -16,8 +16,11 @@ interface AuthContextType {
   hasGlobalPermission: (permission: string) => boolean;
   hasCompanyPermission: (permission: string, companyId?: string) => boolean;
   isOwnerOf: (companyId: string) => boolean;
+  isAdminOf: (companyId: string) => boolean;
   getMembershipId: (companyId: string) => string | undefined;
   setSelectedCompany: (company: CompanyMembership | null) => void;
+  viewAsMember: boolean;
+  toggleViewAsMember: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCompany, setSelectedCompanyState] = useState<CompanyMembership | null>(null);
+  const [viewAsMember, setViewAsMember] = useState(false);
   const { toast } = useToast();
 
   // Load selected company from localStorage
@@ -68,11 +72,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   const isOwnerOf = useCallback((companyId: string): boolean => {
+    if (viewAsMember) return false;
     if (!user) return false;
     if (user.isPlatformAdmin) return true;
     const company = user.companies?.find(c => c.id === companyId);
     return company?.roles?.some(r => r.name === 'Owner') ?? false;
-  }, [user]);
+  }, [user, viewAsMember]);
+
+  const isAdminOf = useCallback((companyId: string): boolean => {
+    if (viewAsMember) return false;
+    if (!user) return false;
+    if (user.isPlatformAdmin) return true;
+    const company = user.companies?.find(c => c.id === companyId);
+    return company?.roles?.some(r => r.name === 'Owner' || r.name === 'Admin') ?? false;
+  }, [user, viewAsMember]);
 
   const getMembershipId = useCallback((companyId: string): string | undefined => {
     return user?.companies?.find(c => c.id === companyId)?.membershipId;
@@ -161,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isAuthenticated: !!user,
-        isPlatformAdmin: user?.isPlatformAdmin || false,
+        isPlatformAdmin: viewAsMember ? false : (user?.isPlatformAdmin || false),
         companies: user?.companies || [],
         selectedCompany,
         login,
@@ -171,8 +184,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasGlobalPermission,
         hasCompanyPermission,
         isOwnerOf,
+        isAdminOf,
         getMembershipId,
         setSelectedCompany,
+        viewAsMember,
+        toggleViewAsMember: () => setViewAsMember(v => !v),
       }}
     >
       {children}

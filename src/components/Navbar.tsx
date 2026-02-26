@@ -11,18 +11,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, LayoutDashboard, Building2, Clock, ShieldAlert, Key, ChevronDown, ChevronRight, Briefcase } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Building2, Clock, ShieldAlert, Key, ChevronDown, ChevronRight, Briefcase, Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { CompanySelector } from '@/components/CompanySelector';
 
 export function Navbar() {
-  const { user, logout, isPlatformAdmin, isOwnerOf, selectedCompany } = useAuth();
+  const { user, logout, isPlatformAdmin, isOwnerOf, isAdminOf, selectedCompany, viewAsMember, toggleViewAsMember } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
   const n = t.nav;
-  const canManageClients = isPlatformAdmin || (!!selectedCompany && isOwnerOf(selectedCompany.id));
+  const canManageClients = isAdminOf(selectedCompany?.id ?? '');
+  // Real elevated role (not overridden by viewAsMember) — to decide whether to show the toggle
+  const hasElevatedRole = (user?.isPlatformAdmin || !!selectedCompany?.roles?.some(r => r.name === 'Owner' || r.name === 'Admin')) ?? false;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminExpanded, setAdminExpanded] = useState(false);
 
@@ -47,6 +49,12 @@ export function Navbar() {
 
   return (
     <>
+      {viewAsMember && (
+        <div className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-amber-500 px-4 py-1.5 text-xs font-medium text-amber-950">
+          <span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Vista como miembro — las opciones de administración están ocultas</span>
+          <button onClick={toggleViewAsMember} className="underline hover:no-underline">Salir</button>
+        </div>
+      )}
       <nav className="border-b bg-card sticky top-0 z-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-3">
@@ -127,6 +135,15 @@ export function Navbar() {
                       {n.profile}
                     </Link>
                   </DropdownMenuItem>
+                  {hasElevatedRole && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={toggleViewAsMember} className="flex items-center gap-2">
+                        {viewAsMember ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {viewAsMember ? 'Salir de vista miembro' : 'Ver como miembro'}
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-destructive">
                     <LogOut className="h-4 w-4" />
@@ -289,6 +306,15 @@ export function Navbar() {
               <LanguageToggle />
             </div>
           </div>
+          {hasElevatedRole && (
+            <button
+              onClick={() => { closeMobileMenu(); toggleViewAsMember(); }}
+              className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-500/10 transition-colors"
+            >
+              {viewAsMember ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
+              {viewAsMember ? 'Salir de vista miembro' : 'Ver como miembro'}
+            </button>
+          )}
           <button
             onClick={() => {
               closeMobileMenu();

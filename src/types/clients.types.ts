@@ -8,6 +8,7 @@ export interface ClientSite {
   city?: string | null;
   notes?: string | null;
   isActive: boolean;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -51,6 +52,7 @@ export interface Client {
   address?: string | null;
   notes?: string | null;
   isActive: boolean;
+  isDefault: boolean;
   sites: ClientSite[];
   rateRules: ClientRateRule[];
   createdAt: string;
@@ -92,6 +94,7 @@ export interface UpdateClientDto {
   address?: string | null;
   notes?: string | null;
   isActive?: boolean;
+  isDefault?: boolean;
 }
 
 export interface CreateClientSiteDto {
@@ -108,6 +111,7 @@ export interface UpdateClientSiteDto {
   city?: string | null;
   notes?: string | null;
   isActive?: boolean;
+  isDefault?: boolean;
 }
 
 export interface CreateClientRateRuleResourceDto {
