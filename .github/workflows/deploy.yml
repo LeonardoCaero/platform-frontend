@@ -38,7 +38,7 @@ jobs:
 
             echo "Rebuilding and starting caero_frontend..."
             cd ${{ secrets.NAS_API_PATH }}
-            docker compose up -d --build --no-deps caero_frontend
+            docker compose --profile prod up -d --build --no-deps caero_frontend caero_caddy
 
             echo "Cleaning up old images..."
             docker image prune -f
