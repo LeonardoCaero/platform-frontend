@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
 import type {
   Client,
   ClientSite,
@@ -13,9 +14,6 @@ import type {
   CreateClientRateRuleResourceDto,
   UpdateClientRateRuleResourceDto,
 } from '@/types/clients.types';
-
-interface ApiResponse<T> { success: boolean; data: T; message?: string; }
-interface PaginatedResponse<T> { success: boolean; data: T[]; pagination: { page: number; limit: number; total: number; totalPages: number; }; }
 
 const BASE = '/clients';
 

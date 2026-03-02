@@ -496,7 +496,6 @@ export default function TimeTracker() {
   );
   };
 
-  // ---------- Entry Form ----------
   const EntryForm = ({ inDialog = false }: { inDialog?: boolean }) => (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Log For (owner/admin only) */}
@@ -518,7 +517,6 @@ export default function TimeTracker() {
         </div>
       )}
 
-      {/* Title */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">{tt.whatDidYouDo}</Label>
         <Input
@@ -530,7 +528,6 @@ export default function TimeTracker() {
         {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
       </div>
 
-      {/* Hours */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">{tt.hours}</Label>
         <div className="flex items-center gap-2">
@@ -552,7 +549,6 @@ export default function TimeTracker() {
         {errors.hours && <p className="text-xs text-destructive">{errors.hours.message}</p>}
       </div>
 
-      {/* Date */}
       <div className="space-y-1.5">
         <Label className="text-sm font-medium">{tt.date}</Label>
         <Controller
@@ -618,7 +614,6 @@ export default function TimeTracker() {
         />
       </div>
 
-      {/* Advanced */}
       <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
         <CollapsibleTrigger asChild>
           <Button variant="ghost" size="sm" className="w-full justify-between h-9 px-2 text-sm text-muted-foreground">
@@ -770,7 +765,6 @@ export default function TimeTracker() {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Quick shortcuts */}
       <div className="flex gap-1.5">
         <Button type="button" variant="outline" size="sm" className="flex-1 h-9 text-xs touch-manipulation"
           onClick={() => { const d = new Date(); setValue('date', d); setValue('hours', 8); setValue('minutes', 0); applyAutoOvertime(watchedClientId, d); }}>
@@ -786,7 +780,6 @@ export default function TimeTracker() {
         </Button>
       </div>
 
-      {/* Submit */}
       <div className="flex gap-2 pt-1">
         {editingEntry && (
           <Button type="button" variant="outline" onClick={cancelEdit}
@@ -811,7 +804,6 @@ export default function TimeTracker() {
   return (
     <DashboardLayout>
       <div className="space-y-4 max-w-5xl mx-auto pb-24 lg:pb-8">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -852,7 +844,6 @@ export default function TimeTracker() {
         ) : (
           <div className="grid gap-4 lg:grid-cols-[400px_1fr]">
 
-            {/* ===== Desktop Form (left column, hidden on mobile) ===== */}
             <div className="hidden lg:block space-y-3">
               <Card>
                 <CardHeader className="pb-3 pt-4 px-5">
@@ -867,7 +858,6 @@ export default function TimeTracker() {
               </Card>
             </div>
 
-            {/* ===== Calendar / List ===== */}
             <div className="space-y-3 min-w-0">
 
               {/* View tabs + navigation */}
@@ -951,7 +941,6 @@ export default function TimeTracker() {
                 </div>
               ) : (
                 <>
-                  {/* DAILY */}
                   {view === 'daily' && (
                     <div className="space-y-2">
                       {dayEntries.length === 0 ? (
@@ -998,7 +987,6 @@ export default function TimeTracker() {
                     </div>
                   )}
 
-                  {/* WEEKLY */}
                   {view === 'weekly' && (
                     <div className="space-y-2">
                       {weekDays.map(day => {
@@ -1041,7 +1029,6 @@ export default function TimeTracker() {
                     </div>
                   )}
 
-                  {/* MONTHLY */}
                   {view === 'monthly' && (
                     <div>
                       {/* View mode toggle: owner/admin see all or just their own */}
@@ -1123,7 +1110,6 @@ export default function TimeTracker() {
         )}
       </div>
 
-      {/* ===== Mobile FAB ===== */}
       {!!companyId && (
         <div className="fixed bottom-6 right-5 z-50 lg:hidden">
           <Button
@@ -1141,7 +1127,6 @@ export default function TimeTracker() {
         </div>
       )}
 
-      {/* ===== Mobile Form Dialog ===== */}
       <Dialog open={showMobileForm} onOpenChange={(open) => { if (!open) cancelEdit(); }}>
         <DialogContent
           className="p-0 gap-0 max-h-[90dvh] flex flex-col w-[calc(100vw-2rem)] sm:w-full max-w-lg rounded-2xl sm:rounded-2xl"
@@ -1158,7 +1143,6 @@ export default function TimeTracker() {
         </DialogContent>
       </Dialog>
 
-      {/* ===== Delete Confirmation ===== */}
       <AlertDialog open={!!deletingEntry} onOpenChange={() => setDeletingEntry(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

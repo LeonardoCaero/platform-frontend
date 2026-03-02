@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -32,61 +33,38 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { companyRequestsService } from '@/services/company-requests.service';
 import { CompanyRequest, CompanyRequestStatus } from '@/types/company-requests.types';
-import { Loader2, Plus, Eye, X } from 'lucide-react';
+import { Loader2, Plus, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function MyRequests() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [requests, setRequests] = useState<CompanyRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [requestToCancel, setRequestToCancel] = useState<CompanyRequest | null>(null);
 
-  const loadRequests = async () => {
-    setIsLoading(true);
-    try {
-      const response = await companyRequestsService.getMyRequests({
-        status: statusFilter as any,
-      });
-      setRequests(response.data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load requests',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuery({
+    queryKey: ['my-company-requests', statusFilter],
+    queryFn: () => companyRequestsService.getMyRequests({ status: statusFilter as CompanyRequestStatus | 'ALL' }),
+  });
 
-  useEffect(() => {
-    loadRequests();
-  }, [statusFilter]);
+  const requests = data?.data ?? [];
 
-  const handleCancel = async () => {
-    if (!requestToCancel) return;
-
-    setCancelingId(requestToCancel.id);
-    try {
-      await companyRequestsService.cancelRequest(requestToCancel.id);
-      toast({
-        title: 'Request cancelled',
-        description: 'Your company request has been cancelled',
-      });
-      loadRequests();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to cancel request',
-        variant: 'destructive',
-      });
-    } finally {
-      setCancelingId(null);
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => companyRequestsService.cancelRequest(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-company-requests'] });
+      toast({ title: 'Request cancelled', description: 'Your company request has been cancelled' });
       setRequestToCancel(null);
-    }
+    },
+    onError: (error: any) => {
+      toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Failed to cancel request' });
+    },
+  });
+
+  const handleCancel = () => {
+    if (!requestToCancel) return;
+    cancelMutation.mutate(requestToCancel.id);
   };
 
   return (
@@ -172,9 +150,9 @@ export default function MyRequests() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setRequestToCancel(request)}
-                              disabled={cancelingId === request.id}
+                              disabled={cancelMutation.isPending && requestToCancel?.id === request.id}
                             >
-                              {cancelingId === request.id ? (
+                              {cancelMutation.isPending && requestToCancel?.id === request.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>

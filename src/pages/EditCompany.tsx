@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { companiesService } from '@/services/companies.service';
 import { CompanyStatus } from '@/types/company.types';
 import { updateCompanySchema, UpdateCompanyFormData } from '@/schemas/company.schemas';
@@ -27,6 +27,7 @@ export default function EditCompany() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const companyId = id!;
 
   const { data: company, isLoading } = useQuery({
@@ -68,13 +69,13 @@ export default function EditCompany() {
         status: data.status,
       }),
     onSuccess: (updatedCompany) => {
-      toast.success(`${updatedCompany.name} has been updated`);
+      toast({ title: `${updatedCompany.name} has been updated` });
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       navigate(`/companies/${companyId}`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update company');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to update company' });
     },
   });
 

@@ -71,7 +71,6 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Request Details */}
           <div className="space-y-3">
             <div>
               <Label className="text-xs text-muted-foreground">Company Name</Label>
@@ -99,7 +98,6 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
 
             <Separator />
 
-            {/* User Info */}
             {request.user && (
               <div>
                 <Label className="text-xs text-muted-foreground">Requested By</Label>
@@ -116,7 +114,6 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
 
           <Separator />
 
-          {/* Review Notes */}
           <div className="space-y-2">
             <Label htmlFor="reviewNotes">Review Notes (optional)</Label>
             <Textarea

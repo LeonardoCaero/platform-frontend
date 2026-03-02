@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse } from '@/types/api.types';
 
 export interface PendingInvitation {
   id: string;
@@ -14,8 +15,8 @@ export interface PendingInvitation {
 
 export const invitationsService = {
   async getPending(): Promise<PendingInvitation[]> {
-    const { data } = await api.get<PendingInvitation[]>('/invitations');
-    return data;
+    const { data } = await api.get<ApiResponse<PendingInvitation[]>>('/invitations');
+    return data.data ?? [];
   },
 
   async accept(membershipId: string): Promise<void> {

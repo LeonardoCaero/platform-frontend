@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse, PaginatedResponse } from '@/types/api.types';
 import type {
   TimeEntry,
   CreateTimeEntryDto,
@@ -8,23 +9,6 @@ import type {
 } from '@/types/time-tracker.types';
 
 const BASE_URL = '/time-entries';
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
-interface PaginatedResponse<T> {
-  success: boolean;
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
 
 export const timeEntriesService = {
   /**

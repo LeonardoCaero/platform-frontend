@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse } from '@/types/api.types';
 
 export interface Permission {
   key: string;
@@ -53,11 +54,6 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}
-
 export const authService = {
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', data);
@@ -70,7 +66,8 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    await api.post('/auth/logout');
+    const refreshToken = localStorage.getItem('refreshToken');
+    await api.post('/auth/logout', { refreshToken });
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
   },
@@ -80,8 +77,4 @@ export const authService = {
     return response.data.data;
   },
 
-  async refreshToken(refreshToken: string): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/refresh', { refreshToken });
-    return response.data.data;
-  },
 };

@@ -120,8 +120,3 @@ export interface SlugAvailabilityResponse {
   available: boolean;
   slug: string;
 }
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-}

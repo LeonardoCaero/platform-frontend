@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -38,70 +39,32 @@ import { format } from 'date-fns';
 export default function MyPermissionRequests() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [requests, setRequests] = useState<PermissionRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [requestToCancel, setRequestToCancel] = useState<PermissionRequest | null>(null);
 
-  const loadRequests = async () => {
-    setIsLoading(true);
-    try {
-      const response = await permissionRequestsService.getMyRequests({
-        status: statusFilter as any,
-      });
-      setRequests(response.data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load requests',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuery({
+    queryKey: ['my-permission-requests', statusFilter],
+    queryFn: () => permissionRequestsService.getMyRequests({ status: statusFilter as PermissionRequestStatus | 'ALL' }),
+  });
 
-  useEffect(() => {
-    loadRequests();
-  }, [statusFilter]);
+  const requests = data?.data ?? [];
 
-  const handleCancel = async () => {
-    if (!requestToCancel) return;
-
-    setCancelingId(requestToCancel.id);
-    try {
-      await permissionRequestsService.cancelRequest(requestToCancel.id);
-      toast({
-        title: 'Request cancelled',
-        description: 'Your permission request has been cancelled',
-      });
-      loadRequests();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to cancel request',
-        variant: 'destructive',
-      });
-    } finally {
-      setCancelingId(null);
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => permissionRequestsService.cancelRequest(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-permission-requests'] });
+      toast({ title: 'Request cancelled', description: 'Your permission request has been cancelled' });
       setRequestToCancel(null);
-    }
-  };
+    },
+    onError: (error: any) => {
+      toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Failed to cancel request' });
+    },
+  });
 
-  const getStatusText = (status: PermissionRequestStatus) => {
-    switch (status) {
-      case PermissionRequestStatus.PENDING:
-        return 'Pending Review';
-      case PermissionRequestStatus.APPROVED:
-        return 'Approved';
-      case PermissionRequestStatus.REJECTED:
-        return 'Rejected';
-      case PermissionRequestStatus.CANCELLED:
-        return 'Cancelled';
-      default:
-        return status;
-    }
+  const handleCancel = () => {
+    if (!requestToCancel) return;
+    cancelMutation.mutate(requestToCancel.id);
   };
 
   return (
@@ -190,7 +153,7 @@ export default function MyPermissionRequests() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={getStatusText(request.status)} />
+                        <StatusBadge status={request.status} />
                       </TableCell>
                       <TableCell>{format(new Date(request.createdAt), 'MMM dd, yyyy')}</TableCell>
                       <TableCell>
@@ -205,9 +168,9 @@ export default function MyPermissionRequests() {
                               variant="ghost"
                               size="sm"
                               onClick={() => setRequestToCancel(request)}
-                              disabled={cancelingId === request.id}
+                              disabled={cancelMutation.isPending && requestToCancel?.id === request.id}
                             >
-                              {cancelingId === request.id ? (
+                              {cancelMutation.isPending && requestToCancel?.id === request.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
                                 <>

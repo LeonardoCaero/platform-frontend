@@ -39,13 +39,14 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { permissionsService } from '@/services/permissions.service';
 import { Permission, PermissionScope } from '@/types/permission.types';
 import { STANDARD_RESOURCES, STANDARD_ACTIONS, generatePermissionKey, validatePermissionKey } from '@/constants/permissions';
 import { Shield, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 export default function Permissions() {
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [scopeFilter, setScopeFilter] = useState<PermissionScope | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
@@ -100,7 +101,7 @@ export default function Permissions() {
     e.preventDefault();
     
     if (!isKeyValid) {
-      toast.error('Invalid permission key format');
+      toast({ variant: 'destructive', title: 'Invalid permission key format' });
       return;
     }
     
@@ -110,12 +111,12 @@ export default function Permissions() {
         description,
         scope,
       });
-      toast.success('Permission created successfully');
+      toast({ title: 'Permission created successfully' });
       setIsCreateDialogOpen(false);
       resetForm();
       refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create permission');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to create permission' });
     }
   };
 
@@ -155,7 +156,7 @@ export default function Permissions() {
     if (!editingPermission) return;
 
     if (!isKeyValid) {
-      toast.error('Invalid permission key format');
+      toast({ variant: 'destructive', title: 'Invalid permission key format' });
       return;
     }
 
@@ -165,13 +166,13 @@ export default function Permissions() {
         description,
         scope,
       });
-      toast.success('Permission updated successfully');
+      toast({ title: 'Permission updated successfully' });
       setIsEditDialogOpen(false);
       setEditingPermission(null);
       resetForm();
       refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update permission');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to update permission' });
     }
   };
 
@@ -180,11 +181,11 @@ export default function Permissions() {
 
     try {
       await permissionsService.deletePermission(permissionToDelete.id);
-      toast.success('Permission deleted successfully');
+      toast({ title: 'Permission deleted successfully' });
       setPermissionToDelete(null);
       refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete permission');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to delete permission' });
     }
   };
 

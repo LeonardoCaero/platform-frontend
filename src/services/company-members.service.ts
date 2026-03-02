@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse } from '@/types/api.types';
 import {
   CompanyMember,
   InviteMemberDto,
@@ -12,8 +13,8 @@ export const companyMembersService = {
    * Get all members of a company
    */
   async getCompanyMembers(companyId: string): Promise<CompanyMember[]> {
-    const { data } = await api.get<CompanyMember[]>(`/companies/${companyId}/members`);
-    return data;
+    const { data } = await api.get<ApiResponse<CompanyMember[]>>(`/companies/${companyId}/members`);
+    return data.data ?? [];
   },
 
   /**
@@ -21,19 +22,19 @@ export const companyMembersService = {
    */
   async searchNonMembers(companyId: string, search?: string): Promise<UserSearchResult[]> {
     const params = search ? { search } : {};
-    const { data } = await api.get<UserSearchResult[]>(`/companies/${companyId}/non-members`, { params });
-    return data;
+    const { data } = await api.get<ApiResponse<UserSearchResult[]>>(`/companies/${companyId}/non-members`, { params });
+    return data.data ?? [];
   },
 
   /**
    * Invite a new member to company
    */
   async inviteMember(companyId: string, memberData: InviteMemberDto): Promise<CompanyMember> {
-    const { data } = await api.post<CompanyMember>(
+    const { data } = await api.post<ApiResponse<CompanyMember>>(
       `/companies/${companyId}/members/invite`,
       memberData
     );
-    return data;
+    return data.data;
   },
 
   /**
@@ -44,11 +45,11 @@ export const companyMembersService = {
     memberId: string,
     roleIds: string[]
   ): Promise<CompanyMember> {
-    const { data } = await api.patch<CompanyMember>(
+    const { data } = await api.patch<ApiResponse<CompanyMember>>(
       `/companies/${companyId}/members/${memberId}/roles`,
       { roleIds }
     );
-    return data;
+    return data.data;
   },
 
   /**
@@ -62,8 +63,8 @@ export const companyMembersService = {
    * Get company roles
    */
   async getCompanyRoles(companyId: string): Promise<CompanyRole[]> {
-    const { data } = await api.get<CompanyRole[]>(`/companies/${companyId}/roles`);
-    return data;
+    const { data } = await api.get<ApiResponse<CompanyRole[]>>(`/companies/${companyId}/roles`);
+    return data.data ?? [];
   },
 
   /**
@@ -73,8 +74,8 @@ export const companyMembersService = {
     companyId: string,
     roleData: CreateCompanyRoleDto
   ): Promise<CompanyRole> {
-    const { data } = await api.post<CompanyRole>(`/companies/${companyId}/roles`, roleData);
-    return data;
+    const { data } = await api.post<ApiResponse<CompanyRole>>(`/companies/${companyId}/roles`, roleData);
+    return data.data;
   },
 
   /**
@@ -85,11 +86,11 @@ export const companyMembersService = {
     roleId: string,
     roleData: Partial<CreateCompanyRoleDto>
   ): Promise<CompanyRole> {
-    const { data } = await api.patch<CompanyRole>(
+    const { data } = await api.patch<ApiResponse<CompanyRole>>(
       `/companies/${companyId}/roles/${roleId}`,
       roleData
     );
-    return data;
+    return data.data;
   },
 
   /**

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,20 +42,17 @@ export default function AdminPermissionRequests() {
   const { isPlatformAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [requests, setRequests] = useState<PermissionRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<PermissionRequest | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
   const [reviewNotes, setReviewNotes] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
     if (authLoading) return;
-
     if (!isPlatformAdmin) {
       toast({
         title: 'Access Denied',
@@ -65,29 +63,36 @@ export default function AdminPermissionRequests() {
     }
   }, [isPlatformAdmin, navigate, toast, authLoading]);
 
-  const loadRequests = async () => {
-    setIsLoading(true);
-    try {
-      const response = await permissionRequestsService.adminGetAllRequests({
-        status: statusFilter as any,
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-permission-requests', statusFilter],
+    queryFn: () => permissionRequestsService.adminGetAllRequests({ status: statusFilter as PermissionRequestStatus }),
+    enabled: !!isPlatformAdmin,
+  });
+
+  const requests = data?.data ?? [];
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, action, notes }: { id: string; action: 'approve' | 'reject'; notes?: string }) =>
+      permissionRequestsService.adminReviewRequest(id, { action, reviewNotes: notes }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-permission-requests'] });
+      toast({
+        title: variables.action === 'approve' ? 'Request approved' : 'Request rejected',
+        description:
+          variables.action === 'approve'
+            ? 'Permission has been granted to the user.'
+            : 'Permission request has been rejected.',
       });
-      setRequests(response.data);
-    } catch (error) {
+      setIsReviewModalOpen(false);
+    },
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to load requests',
+        description: error.response?.data?.message || 'Failed to review request',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isPlatformAdmin) {
-      loadRequests();
-    }
-  }, [statusFilter, isPlatformAdmin]);
+    },
+  });
 
   const handleReviewClick = (request: PermissionRequest, action: 'approve' | 'reject') => {
     setSelectedRequest(request);
@@ -96,35 +101,13 @@ export default function AdminPermissionRequests() {
     setIsReviewModalOpen(true);
   };
 
-  const handleReviewSubmit = async () => {
+  const handleReviewSubmit = () => {
     if (!selectedRequest) return;
-
-    setIsSubmitting(true);
-    try {
-      await permissionRequestsService.adminReviewRequest(selectedRequest.id, {
-        action: reviewAction,
-        reviewNotes: reviewNotes || undefined,
-      });
-
-      toast({
-        title: reviewAction === 'approve' ? 'Request approved' : 'Request rejected',
-        description:
-          reviewAction === 'approve'
-            ? 'Permission has been granted to the user.'
-            : 'Permission request has been rejected.',
-      });
-
-      setIsReviewModalOpen(false);
-      loadRequests();
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to review request',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    reviewMutation.mutate({
+      id: selectedRequest.id,
+      action: reviewAction,
+      notes: reviewNotes || undefined,
+    });
   };
 
   const filteredRequests = requests.filter((request) => {
@@ -261,7 +244,7 @@ export default function AdminPermissionRequests() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <StatusBadge status={getStatusText(request.status)} />
+                          <StatusBadge status={request.status} />
                         </TableCell>
                         <TableCell>
                           {format(new Date(request.createdAt), 'MMM dd, yyyy')}
@@ -358,9 +341,9 @@ export default function AdminPermissionRequests() {
             <Button
               variant={reviewAction === 'approve' ? 'default' : 'destructive'}
               onClick={handleReviewSubmit}
-              disabled={isSubmitting}
+              disabled={reviewMutation.isPending}
             >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {reviewAction === 'approve' ? 'Approve' : 'Reject'}
             </Button>
           </DialogFooter>

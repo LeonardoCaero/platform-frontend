@@ -9,14 +9,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { companyRequestsService } from '@/services/company-requests.service';
 import { companiesService } from '@/services/companies.service';
+import { useSlugValidation } from '@/hooks/useSlugValidation';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function RequestCompany() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingSlug, setIsCheckingSlug] = useState(false);
-  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
 
   const [formData, setFormData] = useState({
     companyName: '',
@@ -25,6 +24,8 @@ export default function RequestCompany() {
     reason: '',
   });
 
+  const { isChecking: isCheckingSlug, isAvailable: slugAvailable } = useSlugValidation(formData.companySlug);
+
   // Auto-generate slug from company name
   useEffect(() => {
     if (formData.companyName && !formData.companySlug) {
@@ -32,29 +33,6 @@ export default function RequestCompany() {
       setFormData((prev) => ({ ...prev, companySlug: slug }));
     }
   }, [formData.companyName, formData.companySlug]);
-
-  // Check slug availability
-  useEffect(() => {
-    const checkSlug = async () => {
-      if (!formData.companySlug || formData.companySlug.length < 3) {
-        setSlugAvailable(null);
-        return;
-      }
-
-      setIsCheckingSlug(true);
-      try {
-        const result = await companiesService.checkSlugAvailability(formData.companySlug);
-        setSlugAvailable(result.available);
-      } catch (error) {
-        setSlugAvailable(null);
-      } finally {
-        setIsCheckingSlug(false);
-      }
-    };
-
-    const timer = setTimeout(checkSlug, 500);
-    return () => clearTimeout(timer);
-  }, [formData.companySlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

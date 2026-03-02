@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse } from '@/types/api.types';
 import { User } from './auth.service';
 
 export interface UpdateUserData {
@@ -21,8 +22,8 @@ export interface PlatformUser {
 
 export const usersService = {
   async getUser(id: string): Promise<User> {
-    const response = await api.get<User>(`/users/${id}`);
-    return response.data;
+    const response = await api.get<ApiResponse<User>>(`/users/${id}`);
+    return response.data.data;
   },
 
   async listUsers(search?: string, limit = 20): Promise<PlatformUser[]> {
@@ -33,8 +34,8 @@ export const usersService = {
   },
 
   async updateUser(id: string, data: UpdateUserData): Promise<User> {
-    const response = await api.patch<User>(`/users/${id}`, data);
-    return response.data;
+    const response = await api.patch<ApiResponse<User>>(`/users/${id}`, data);
+    return response.data.data;
   },
 
   async updatePassword(id: string, data: UpdatePasswordData): Promise<void> {

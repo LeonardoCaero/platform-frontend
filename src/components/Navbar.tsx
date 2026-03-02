@@ -58,7 +58,6 @@ export function Navbar() {
       <nav className="border-b bg-card sticky top-0 z-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-3">
-            {/* Logo */}
             <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
               <LayoutDashboard className="h-6 w-6 text-primary" />
               <span className="text-xl font-semibold text-foreground hidden sm:block">{n.dashboard}</span>
@@ -183,7 +182,6 @@ export function Navbar() {
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        {/* Drawer Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b">
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10">
@@ -202,7 +200,6 @@ export function Navbar() {
           </Button>
         </div>
 
-        {/* Company Selector */}
         <div className="px-4 py-3 border-b">
           <CompanySelector />
         </div>

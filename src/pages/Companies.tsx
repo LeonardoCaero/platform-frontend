@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { companiesService } from '@/services/companies.service';
 import { Company } from '@/types/company.types';
 import { Building2, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -25,6 +25,7 @@ import { Building2, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 export default function Companies() {
   const navigate = useNavigate();
   const { isPlatformAdmin, isOwnerOf } = useAuth();
+  const { toast } = useToast();
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
     status: 'ALL',
@@ -65,11 +66,11 @@ export default function Companies() {
 
     try {
       await companiesService.deleteCompany(companyToDelete.id);
-      toast.success(`${companyToDelete.name} has been deleted`);
+      toast({ title: `${companyToDelete.name} has been deleted` });
       setCompanyToDelete(null);
       refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete company');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to delete company' });
     }
   };
 
@@ -77,11 +78,11 @@ export default function Companies() {
     if (!companyToRestore) return;
     try {
       await companiesService.restoreCompany(companyToRestore.id);
-      toast.success(`${companyToRestore.name} has been restored`);
+      toast({ title: `${companyToRestore.name} has been restored` });
       setCompanyToRestore(null);
       refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to restore company');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to restore company' });
     }
   };
 

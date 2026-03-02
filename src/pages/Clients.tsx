@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -29,57 +28,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { clientsService } from '@/services/clients.service';
 import type { Client, ClientSite, ClientRateRule, ClientRateRuleResource, OvertimeTrigger } from '@/types/clients.types';
 import {
+  clientSchema, siteSchema, rateSchema, resourceSchema,
+  type ClientFormData, type SiteFormData, type RateFormData, type ResourceFormData,
+} from '@/schemas/clients.schemas';
+import {
   Building2, ChevronDown, Loader2, MapPin, Pencil, Pin, Plus, Trash2, Euro,
   Clock, Users, Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Navigate } from 'react-router-dom';
-
-// ─── Schemas ─────────────────────────────────────────────────────────────────
-
-const clientSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  taxId: z.string().max(50).optional().nullable(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')).nullable(),
-  phone: z.string().max(20).optional().nullable(),
-  address: z.string().max(1000).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
-  isActive: z.boolean().default(true),
-});
-
-const siteSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(255),
-  city: z.string().max(100).optional().nullable(),
-  address: z.string().max(1000).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
-  isActive: z.boolean().default(true),
-});
-
-const rateSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  baseRatePerHour: z.number().min(0).optional().nullable(),
-  overtimeRatePerHour: z.number({ invalid_type_error: 'Required' }).min(0),
-  currency: z.string().length(3).default('EUR'),
-  overtimeTriggers: z.array(z.enum(['WEEKEND', 'AFTER_HOURS', 'MANUAL'])).default([]),
-  workdayStartTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().or(z.literal('')).nullable(),
-  workdayEndTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().or(z.literal('')).nullable(),
-  workdays: z.array(z.number()).default([1, 2, 3, 4, 5]),
-  isActive: z.boolean().default(true),
-  effectiveFrom: z.string().min(1, 'Start date is required'),
-  effectiveTo: z.string().optional().or(z.literal('')).nullable(),
-});
-
-type ClientFormData = z.infer<typeof clientSchema>;
-type SiteFormData = z.infer<typeof siteSchema>;
-type RateFormData = z.infer<typeof rateSchema>;
-
-const resourceSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  baseRatePerHour: z.number({ invalid_type_error: 'Required' }).min(0),
-  isActive: z.boolean().default(true),
-});
-type ResourceFormData = z.infer<typeof resourceSchema>;
 
 export default function Clients() {
   const { toast } = useToast();
@@ -96,7 +54,6 @@ export default function Clients() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // ── State ────────────────────────────────────────────────────────────────
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [clientDialog, setClientDialog] = useState<{ open: boolean; editing?: Client }>({ open: false });
   const [siteDialog, setSiteDialog] = useState<{ open: boolean; clientId?: string; editing?: ClientSite }>({ open: false });
@@ -107,7 +64,6 @@ export default function Clients() {
   const [resourceDialog, setResourceDialog] = useState<{ open: boolean; ruleId?: string; editing?: ClientRateRuleResource }>({ open: false });
   const [deleteResourceConfirm, setDeleteResourceConfirm] = useState<ClientRateRuleResource | null>(null);
 
-  // ── Queries ───────────────────────────────────────────────────────────────
   const { data: clientsData, isLoading } = useQuery({
     queryKey: ['clients', companyId],
     queryFn: () => clientsService.list({ companyId, page: 1, limit: 200 }),
@@ -115,7 +71,6 @@ export default function Clients() {
   });
   const clients = clientsData?.data ?? [];
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
   const invalidate = () => qc.invalidateQueries({ queryKey: ['clients', companyId] });
 
   const createClientMutation = useMutation({
@@ -206,7 +161,6 @@ export default function Clients() {
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
-  // ── Forms ─────────────────────────────────────────────────────────────────
   const clientForm = useForm<ClientFormData>({ resolver: zodResolver(clientSchema), defaultValues: { name: '', taxId: '', email: '', phone: '', address: '', notes: '', isActive: true } });
   const siteForm = useForm<SiteFormData>({ resolver: zodResolver(siteSchema), defaultValues: { name: '', city: '', address: '', notes: '', isActive: true } });
   const rateForm = useForm<RateFormData>({ resolver: zodResolver(rateSchema), defaultValues: { name: '', baseRatePerHour: undefined, overtimeRatePerHour: 0, currency: 'EUR', overtimeTriggers: ['WEEKEND'], workdays: [1,2,3,4,5,6], isActive: true, effectiveFrom: format(new Date(), 'yyyy-MM-dd'), effectiveTo: '' } });
@@ -292,7 +246,6 @@ export default function Clients() {
     }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   if (!companyId) {
     return (
       <DashboardLayout>
@@ -304,7 +257,6 @@ export default function Clients() {
   return (
     <DashboardLayout>
       <div className="space-y-4 max-w-4xl mx-auto pb-10">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
@@ -385,7 +337,6 @@ export default function Clients() {
                           <TabsTrigger value="rates" className="gap-1.5"><Euro className="h-3.5 w-3.5" />{tc.rateRules}</TabsTrigger>
                         </TabsList>
 
-                        {/* ── Sites ───────────────────────────────────────── */}
                         <TabsContent value="sites" className="space-y-2">
                           <div className="flex justify-end">
                             <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => openSiteDialog(client.id)}>
@@ -420,7 +371,6 @@ export default function Clients() {
                           )}
                         </TabsContent>
 
-                        {/* ── Rate Rules ───────────────────────────────────── */}
                         <TabsContent value="rates" className="space-y-2">
                           <div className="flex justify-end">
                             <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => openRateDialog(client.id)}>
@@ -440,7 +390,6 @@ export default function Clients() {
                             <div className="space-y-1.5">
                               {client.rateRules.map(rule => (
                                 <div key={rule.id} className={cn('rounded-lg border bg-muted/20', !rule.isActive && 'opacity-50')}>
-                                  {/* Rule header */}
                                   <div className="flex items-start justify-between px-3 py-2.5">
                                     <div className="min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
@@ -466,7 +415,6 @@ export default function Clients() {
                                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteRateConfirm(rule)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                                     </div>
                                   </div>
-                                  {/* Resources */}
                                   {rule.resources && rule.resources.length > 0 && (
                                     <div className="px-3 pb-1 space-y-0.5 border-t pt-1.5">
                                       {rule.resources.map(r => (
@@ -485,7 +433,6 @@ export default function Clients() {
                                       ))}
                                     </div>
                                   )}
-                                  {/* Add resource */}
                                   <div className="px-3 pb-3 pt-1 border-t">
                                     <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 w-full" onClick={() => openResourceDialog(rule.id)}>
                                       <Plus className="h-3 w-3" />
@@ -507,7 +454,7 @@ export default function Clients() {
         )}
       </div>
 
-      {/* ── Client Dialog ───────────────────────────────────────────────────── */}
+      {/* client dialog */}
       <Dialog open={clientDialog.open} onOpenChange={open => !open && setClientDialog({ open: false })}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{clientDialog.editing ? tc.editClient : tc.newClient}</DialogTitle></DialogHeader>
@@ -557,7 +504,7 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Site Dialog ─────────────────────────────────────────────────────── */}
+      {/* site dialog */}
       <Dialog open={siteDialog.open} onOpenChange={open => !open && setSiteDialog({ open: false })}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{siteDialog.editing ? tc.editSite : tc.newSite}</DialogTitle></DialogHeader>
@@ -598,7 +545,7 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Rate Dialog ─────────────────────────────────────────────────────── */}
+      {/* rate dialog */}
       <Dialog open={rateDialog.open} onOpenChange={open => !open && setRateDialog({ open: false })}>
         <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader><DialogTitle>{rateDialog.editing ? tc.editRate : tc.newRate}</DialogTitle></DialogHeader>
@@ -691,7 +638,7 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Resource Dialog ──────────────────────────────────────────────────── */}
+      {/* resource dialog */}
       <Dialog open={resourceDialog.open} onOpenChange={open => !open && setResourceDialog({ open: false })}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -740,7 +687,7 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirmations ─────────────────────────────────────────────── */}
+      {/* delete dialogs */}
       <AlertDialog open={!!deleteClientConfirm} onOpenChange={() => setDeleteClientConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

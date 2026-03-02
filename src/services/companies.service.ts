@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import type { ApiResponse } from '@/types/api.types';
 import {
   Company,
   CreateCompanyDto,
@@ -6,7 +7,6 @@ import {
   CompaniesListParams,
   PaginatedCompaniesResponse,
   SlugAvailabilityResponse,
-  ApiResponse,
 } from '@/types/company.types';
 
 const BASE_URL = '/companies';
@@ -16,7 +16,7 @@ export const companiesService = {
    * Get paginated list of companies
    */
   async getCompanies(params: CompaniesListParams = {}): Promise<PaginatedCompaniesResponse> {
-    const queryParams: any = {
+    const queryParams: Record<string, unknown> = {
       page: params.page,
       limit: params.limit,
       search: params.search,

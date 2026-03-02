@@ -1,7 +1,6 @@
 import api from '@/lib/axios';
+import type { ApiResponse } from '@/types/api.types';
 import type { TimeEntryCategory, CreateCategoryDto, UpdateCategoryDto } from '@/types/clients.types';
-
-interface ApiResponse<T> { success: boolean; data: T; }
 
 const BASE = '/time-entry-categories';
 

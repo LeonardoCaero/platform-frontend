@@ -13,14 +13,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { permissionRequestsService } from '@/services/permission-requests.service';
-import { Permission } from '@/types/permission-requests.types';
+import { Permission, PermissionRequestStatus } from '@/types/permission-requests.types';
 import { Loader2, AlertCircle, Key } from 'lucide-react';
-import api from '@/lib/axios';
 
 export default function RequestPermission() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(true);
@@ -34,31 +35,23 @@ export default function RequestPermission() {
     const loadPermissions = async () => {
       setLoadingPermissions(true);
       try {
-        // Fetch available permissions
-        const permissions = await permissionRequestsService.getAvailablePermissions();
-        
-        // Get user's current permissions and pending requests to filter out
-        const [userResponse, requestsResponse] = await Promise.all([
-          api.get('/auth/me'),
-          permissionRequestsService.getMyRequests({ status: 'PENDING' }),
+        const [permissions, requestsResponse] = await Promise.all([
+          permissionRequestsService.getAvailablePermissions(),
+          permissionRequestsService.getMyRequests({ status: PermissionRequestStatus.PENDING }),
         ]);
 
-        const userPermissions = userResponse.data.data.globalPermissions || [];
-        const userPermissionIds = userPermissions.map((p: any) => p.id);
+        const userPermissionIds = (user?.globalPermissions ?? []).map((p) => p.key);
 
-        const pendingRequests = requestsResponse.data || [];
-        const pendingPermissionIds = pendingRequests
-          .map((req: any) => req.requestedPermissionId)
+        const pendingPermissionIds = requestsResponse.data
+          .map((req) => req.requestedPermissionId)
           .filter(Boolean);
 
-        // Filter out permissions the user already has OR has pending requests for
         const available = permissions.filter(
-          p => !userPermissionIds.includes(p.id) && !pendingPermissionIds.includes(p.id)
+          (p) => !userPermissionIds.includes(p.key) && !pendingPermissionIds.includes(p.id)
         );
-        
+
         setAvailablePermissions(available);
       } catch (error) {
-        console.error('Failed to load permissions', error);
         toast({
           title: 'Error',
           description: 'Failed to load available permissions',
@@ -70,7 +63,7 @@ export default function RequestPermission() {
     };
 
     loadPermissions();
-  }, []);
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

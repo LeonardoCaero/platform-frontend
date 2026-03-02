@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { companiesService } from '@/services/companies.service';
 import { companyMembersService } from '@/services/company-members.service';
 import { Users, Shield, Settings, Info } from 'lucide-react';
@@ -28,6 +28,7 @@ import { Users, Shield, Settings, Info } from 'lucide-react';
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isOwnerOf, getMembershipId, selectedCompany, setSelectedCompany, refreshUser } = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -62,7 +63,7 @@ export default function CompanyDetail() {
   const deleteMutation = useMutation({
     mutationFn: () => companiesService.deleteCompany(companyId),
     onSuccess: () => {
-      toast.success('Company has been deleted');
+      toast({ title: 'Company has been deleted' });
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       // Deselect if this was the active company
       if (selectedCompany?.id === companyId) {
@@ -72,26 +73,26 @@ export default function CompanyDetail() {
       setDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete company');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to delete company' });
     },
   });
 
   const restoreMutation = useMutation({
     mutationFn: () => companiesService.restoreCompany(companyId),
     onSuccess: () => {
-      toast.success('Company has been restored');
+      toast({ title: 'Company has been restored' });
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       setRestoreDialogOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to restore company');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to restore company' });
     },
   });
 
   const leaveMutation = useMutation({
     mutationFn: () => companyMembersService.removeMember(companyId, membershipId!),
     onSuccess: () => {
-      toast.success('You have left the company');
+      toast({ title: 'You have left the company' });
       if (selectedCompany?.id === companyId) {
         setSelectedCompany(null);
       }
@@ -99,7 +100,7 @@ export default function CompanyDetail() {
       navigate('/companies');
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to leave company');
+      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to leave company' });
     },
   });
 

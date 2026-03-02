@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReviewRequestModal } from '@/components/ReviewRequestModal';
@@ -32,8 +33,7 @@ export default function AdminCompanyRequests() {
   const { isPlatformAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [requests, setRequests] = useState<CompanyRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<CompanyRequest | null>(null);
@@ -41,9 +41,7 @@ export default function AdminCompanyRequests() {
 
   // Redirect if not admin
   useEffect(() => {
-
     if (authLoading) return;
-    
     if (!isPlatformAdmin) {
       toast({
         title: 'Access Denied',
@@ -54,29 +52,13 @@ export default function AdminCompanyRequests() {
     }
   }, [isPlatformAdmin, navigate, toast, authLoading]);
 
-  const loadRequests = async () => {
-    setIsLoading(true);
-    try {
-      const response = await companyRequestsService.adminGetAllRequests({
-        status: statusFilter as any,
-      });
-      setRequests(response.data);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load requests',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-company-requests', statusFilter],
+    queryFn: () => companyRequestsService.adminGetAllRequests({ status: statusFilter as CompanyRequestStatus }),
+    enabled: !!isPlatformAdmin,
+  });
 
-  useEffect(() => {
-    if (isPlatformAdmin) {
-      loadRequests();
-    }
-  }, [statusFilter, isPlatformAdmin]);
+  const requests = data?.data ?? [];
 
   const handleReviewClick = (request: CompanyRequest) => {
     setSelectedRequest(request);
@@ -84,7 +66,7 @@ export default function AdminCompanyRequests() {
   };
 
   const handleReviewSuccess = () => {
-    loadRequests();
+    queryClient.invalidateQueries({ queryKey: ['admin-company-requests'] });
   };
 
   const filteredRequests = requests.filter((request) => {

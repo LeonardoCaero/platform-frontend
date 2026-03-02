@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,36 +19,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usersService } from "@/services/users.service";
+import { profileSchema, passwordSchema, type ProfileFormData, type PasswordFormData } from "@/schemas/profile.schemas";
 import { Loader2, User } from "lucide-react";
-
-const profileSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  phone: z.string().optional(),
-  avatar: z
-    .string()
-    .url("Please enter a valid URL")
-    .optional()
-    .or(z.literal("")),
-});
-
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type ProfileFormData = z.infer<typeof profileSchema>;
-type PasswordFormData = z.infer<typeof passwordSchema>;
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
-  console.log(user);
+  const { t } = useLanguage();
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -77,8 +54,8 @@ export default function Profile() {
     onSuccess: () => {
       refreshUser();
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        title: t.profile.profileUpdated,
+        description: t.profile.profileUpdatedDesc,
       });
     },
     onError: (error: any) => {
@@ -86,7 +63,7 @@ export default function Profile() {
         variant: "destructive",
         title: "Error",
         description:
-          error.response?.data?.message || "Failed to update profile",
+          error.response?.data?.message || t.profile.profileError,
       });
     },
   });
@@ -100,8 +77,8 @@ export default function Profile() {
     onSuccess: () => {
       passwordForm.reset();
       toast({
-        title: "Password updated",
-        description: "Your password has been changed successfully",
+        title: t.profile.passwordUpdated,
+        description: t.profile.passwordUpdatedDesc,
       });
     },
     onError: (error: any) => {
@@ -109,7 +86,7 @@ export default function Profile() {
         variant: "destructive",
         title: "Error",
         description:
-          error.response?.data?.message || "Failed to update password",
+          error.response?.data?.message || t.profile.passwordError,
       });
     },
   });
@@ -127,9 +104,9 @@ export default function Profile() {
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Profile</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t.profile.title}</h1>
           <p className="mt-2 text-muted-foreground">
-            Manage your account settings
+            {t.profile.subtitle}
           </p>
         </div>
 
@@ -137,8 +114,8 @@ export default function Profile() {
           {/* Profile Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
+              <CardTitle>{t.profile.profileSection}</CardTitle>
+              <CardDescription>{t.profile.profileSectionDesc}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="mb-6 flex items-center gap-4">
@@ -167,7 +144,7 @@ export default function Profile() {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">{t.profile.fullName}</Label>
                   <Input id="fullName" {...profileForm.register("fullName")} />
                   {profileForm.formState.errors.fullName && (
                     <p className="text-sm text-destructive">
@@ -177,7 +154,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t.auth.email}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -186,16 +163,16 @@ export default function Profile() {
                     className="bg-muted"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Email cannot be changed
+                    {t.profile.emailNote}
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t.profile.phone}</Label>
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="+1 (555) 123-4567"
+                    placeholder={t.profile.phonePlaceholder}
                     {...profileForm.register("phone")}
                   />
                   {profileForm.formState.errors.phone && (
@@ -206,11 +183,11 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="avatar">Avatar URL</Label>
+                  <Label htmlFor="avatar">{t.profile.avatarUrl}</Label>
                   <Input
                     id="avatar"
                     type="url"
-                    placeholder="https://example.com/avatar.jpg"
+                    placeholder={t.profile.avatarUrlPlaceholder}
                     {...profileForm.register("avatar")}
                   />
                   {profileForm.formState.errors.avatar && (
@@ -227,7 +204,7 @@ export default function Profile() {
                   {updateProfileMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Save Changes
+                  {updateProfileMutation.isPending ? t.profile.saving : t.profile.saveChanges}
                 </Button>
               </form>
             </CardContent>
@@ -236,9 +213,9 @@ export default function Profile() {
           {/* Change Password */}
           <Card>
             <CardHeader>
-              <CardTitle>Change Password</CardTitle>
+              <CardTitle>{t.profile.passwordSection}</CardTitle>
               <CardDescription>
-                Update your password to keep your account secure
+                {t.profile.passwordSectionDesc}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -249,7 +226,7 @@ export default function Profile() {
                 className="space-y-4"
               >
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Label htmlFor="currentPassword">{t.profile.currentPassword}</Label>
                   <Input
                     id="currentPassword"
                     type="password"
@@ -266,7 +243,7 @@ export default function Profile() {
                 <Separator />
 
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword">{t.profile.newPassword}</Label>
                   <Input
                     id="newPassword"
                     type="password"
@@ -281,7 +258,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword">{t.profile.confirmPassword}</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -302,7 +279,7 @@ export default function Profile() {
                   {updatePasswordMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Update Password
+                  {updatePasswordMutation.isPending ? t.profile.updatingPassword : t.profile.updatePassword}
                 </Button>
               </form>
             </CardContent>
