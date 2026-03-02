@@ -129,11 +129,11 @@ export default function CreateCompany() {
       });
       return;
     }
-    setCurrentStep(currentStep + 1);
+    setCurrentStep(prev => prev + 1);
   };
 
   const handleBack = () => {
-    setCurrentStep(currentStep - 1);
+    setCurrentStep(prev => prev - 1);
   };
 
   const handleSubmit = async () => {
@@ -349,7 +349,7 @@ export default function CreateCompany() {
                 {usersLoading ? (
                   <div className="p-3 space-y-3">
                     {[1, 2, 3].map((i) => (
-                      <div key={i} className="flex items-center gap-3">
+                      <div key={`skeleton-${i}`} className="flex items-center gap-3">
                         <Skeleton className="h-8 w-8 rounded-full" />
                         <div className="space-y-1 flex-1">
                           <Skeleton className="h-3 w-32" />

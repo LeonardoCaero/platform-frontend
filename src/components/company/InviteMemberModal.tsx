@@ -90,7 +90,6 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
                 setSearch(e.target.value);
                 setSelected(null);
               }}
-              autoFocus
             />
           </div>
 
@@ -99,7 +98,7 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
             {isLoading ? (
               <div className="p-3 space-y-3">
                 {[1, 2, 3].map(i => (
-                  <div key={i} className="flex items-center gap-3">
+                  <div key={`skeleton-${i}`} className="flex items-center gap-3">
                     <Skeleton className="h-8 w-8 rounded-full" />
                     <div className="space-y-1 flex-1">
                       <Skeleton className="h-3 w-32" />

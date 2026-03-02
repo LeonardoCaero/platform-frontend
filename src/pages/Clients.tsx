@@ -49,11 +49,6 @@ export default function Clients() {
   const companyId = selectedCompany?.id ?? '';
   const canManage = isAdminOf(companyId);
 
-  // If not authorized, redirect
-  if (companyId && !canManage) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [clientDialog, setClientDialog] = useState<{ open: boolean; editing?: Client }>({ open: false });
   const [siteDialog, setSiteDialog] = useState<{ open: boolean; clientId?: string; editing?: ClientSite }>({ open: false });
@@ -245,6 +240,10 @@ export default function Clients() {
       createResourceMutation.mutate({ ruleId: resourceDialog.ruleId, data });
     }
   };
+
+  if (companyId && !canManage) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   if (!companyId) {
     return (

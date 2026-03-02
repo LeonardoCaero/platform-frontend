@@ -170,8 +170,10 @@ export function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden w-full h-full border-0 p-0 cursor-default"
           onClick={closeMobileMenu}
         />
       )}
