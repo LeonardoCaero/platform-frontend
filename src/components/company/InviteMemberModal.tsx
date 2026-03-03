@@ -97,8 +97,8 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
           <div className="max-h-64 overflow-y-auto rounded-md border divide-y">
             {isLoading ? (
               <div className="p-3 space-y-3">
-                {[1, 2, 3].map(i => (
-                  <div key={`skeleton-${i}`} className="flex items-center gap-3">
+                {[1, 2, 3].map(n => (
+                  <div key={n} className="flex items-center gap-3">
                     <Skeleton className="h-8 w-8 rounded-full" />
                     <div className="space-y-1 flex-1">
                       <Skeleton className="h-3 w-32" />

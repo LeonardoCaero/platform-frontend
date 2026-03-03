@@ -48,15 +48,13 @@ export default function EditCompany() {
   });
 
   useEffect(() => {
-    if (company) {
-      form.reset({
-        name: company.name,
-        slug: company.slug,
-        logo: company.logo || '',
-        description: company.description || '',
-        status: company.status,
-      });
-    }
+    form.reset({
+      name: company?.name ?? '',
+      slug: company?.slug ?? '',
+      logo: company?.logo ?? '',
+      description: company?.description ?? '',
+      status: company?.status ?? CompanyStatus.ACTIVE,
+    });
   }, [company, form]);
 
   const updateMutation = useMutation({

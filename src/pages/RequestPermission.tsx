@@ -23,8 +23,10 @@ export default function RequestPermission() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([]);
-  const [loadingPermissions, setLoadingPermissions] = useState(true);
+  const [{ loadingPermissions, availablePermissions }, setPermState] = useState<{
+    loadingPermissions: boolean;
+    availablePermissions: Permission[];
+  }>({ loadingPermissions: true, availablePermissions: [] });
 
   const [formData, setFormData] = useState({
     requestedPermissionId: '',
@@ -33,7 +35,6 @@ export default function RequestPermission() {
 
   useEffect(() => {
     const loadPermissions = async () => {
-      setLoadingPermissions(true);
       try {
         const [permissions, requestsResponse] = await Promise.all([
           permissionRequestsService.getAvailablePermissions(),
@@ -50,15 +51,14 @@ export default function RequestPermission() {
           (p) => !userPermissionIds.includes(p.key) && !pendingPermissionIds.includes(p.id)
         );
 
-        setAvailablePermissions(available);
+        setPermState({ loadingPermissions: false, availablePermissions: available });
       } catch (error) {
         toast({
           title: 'Error',
           description: 'Failed to load available permissions',
           variant: 'destructive',
         });
-      } finally {
-        setLoadingPermissions(false);
+        setPermState({ loadingPermissions: false, availablePermissions: [] });
       }
     };
 

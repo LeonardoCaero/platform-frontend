@@ -34,26 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load selected company from localStorage
   useEffect(() => {
-    if (!user) {
+    if (!user?.companies) {
       setSelectedCompanyState(null);
       return;
     }
-
-    const savedCompanySlug = localStorage.getItem('selectedCompanySlug');
-    if (savedCompanySlug && user.companies) {
-      const company = user.companies.find(c => c.slug === savedCompanySlug);
-      if (company) {
-        setSelectedCompanyState(company);
-      } else if (user.companies.length > 0) {
-        setSelectedCompanyState(user.companies[0]);
-      } else {
-        setSelectedCompanyState(null);
-      }
-    } else if (user.companies && user.companies.length > 0) {
-      setSelectedCompanyState(user.companies[0]);
-    } else {
-      setSelectedCompanyState(null);
-    }
+    const savedSlug = localStorage.getItem('selectedCompanySlug');
+    const found = savedSlug ? user.companies.find(c => c.slug === savedSlug) : null;
+    setSelectedCompanyState(found ?? user.companies[0] ?? null);
   }, [user]);
 
   const setSelectedCompany = useCallback((company: CompanyMembership | null) => {
