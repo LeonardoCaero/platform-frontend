@@ -29,7 +29,7 @@ export default function Register() {
     setIsLoading(true);
     try {
       await registerUser(data.email, data.password, data.fullName);
-      navigate('/dashboard');
+      navigate('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',

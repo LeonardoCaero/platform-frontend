@@ -202,7 +202,7 @@ export default function RequestPermission() {
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Submit Request
                 </Button>
-                <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>
+                <Button type="button" variant="outline" onClick={() => navigate('/')}>
                   Cancel
                 </Button>
               </div>

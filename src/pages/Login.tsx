@@ -31,7 +31,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       await login(data.email, data.password);
-      navigate('/dashboard');
+      navigate('/');
     } catch (error: any) {
       toast({
         variant: 'destructive',

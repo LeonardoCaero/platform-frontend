@@ -25,6 +25,7 @@ import MyPermissionRequests from "./pages/MyPermissionRequests";
 import AdminPermissionRequests from "./pages/AdminPermissionRequests";
 import Permissions from "./pages/Permissions";
 import Clients from "./pages/Clients";
+import CompanyCalendar from "./pages/CompanyCalendar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,17 +52,17 @@ const App = () => (
           <AuthProvider>
             <AppRealtimeLayer>
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
               <Route
-                path="/dashboard"
+                path="/"
                 element={
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
                 }
               />
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
               <Route
                 path="/time-tracker"
                 element={
@@ -171,6 +172,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Clients />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <ProtectedRoute>
+                    <CompanyCalendar />
                   </ProtectedRoute>
                 }
               />

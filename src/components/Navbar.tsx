@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, User, LogOut, LayoutDashboard, Building2, Clock, ShieldAlert, Key, ChevronDown, ChevronRight, Briefcase, Eye, EyeOff } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Building2, Clock, ShieldAlert, Key, ChevronDown, ChevronRight, Briefcase, Eye, EyeOff, CalendarDays, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -20,7 +21,8 @@ import { CompanySelector } from '@/components/CompanySelector';
 export function Navbar() {
   const { user, logout, isPlatformAdmin, isOwnerOf, isAdminOf, selectedCompany, viewAsMember, toggleViewAsMember } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language, toggleLanguage } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const n = t.nav;
   const canManageClients = isAdminOf(selectedCompany?.id ?? '');
   // Real elevated role (not overridden by viewAsMember) — to decide whether to show the toggle
@@ -58,7 +60,7 @@ export function Navbar() {
       <nav className="border-b bg-card sticky top-0 z-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-3">
-            <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
+            <Link to="/" className="flex items-center gap-2 shrink-0">
               <LayoutDashboard className="h-6 w-6 text-primary" />
               <span className="text-xl font-semibold text-foreground hidden sm:block">{n.dashboard}</span>
             </Link>
@@ -69,17 +71,11 @@ export function Navbar() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex md:items-center md:gap-2">
+            <div className="hidden md:flex md:items-center md:gap-1">
               <Button variant="ghost" asChild>
                 <Link to="/companies" className="flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   {n.companies}
-                </Link>
-              </Button>
-              <Button variant="ghost" asChild>
-                <Link to="/my-permission-requests" className="flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  {n.myRequests}
                 </Link>
               </Button>
               {canManageClients && (
@@ -112,34 +108,54 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <ThemeToggle />
-              <LanguageToggle />
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.avatar} alt={user?.fullName} />
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {user?.fullName ? getInitials(user.fullName) : 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium">{user?.fullName?.split(' ')[0]}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       {n.profile}
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-permission-requests" className="flex items-center gap-2">
+                      <Key className="h-4 w-4" />
+                      {n.myRequests}
+                    </Link>
+                  </DropdownMenuItem>
+                  {selectedCompany && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/calendar" className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        {n.calendar}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={toggleTheme} className="flex items-center gap-2">
+                    {theme === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                    {theme === 'light' ? 'Light' : 'Dark'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={toggleLanguage} className="flex items-center gap-2">
+                    <span className="text-base leading-none">{language === 'en' ? '🇪🇸' : '🇬🇧'}</span>
+                    {language === 'en' ? 'ES' : 'EN'}
+                  </DropdownMenuItem>
                   {hasElevatedRole && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={toggleViewAsMember} className="flex items-center gap-2">
                         {viewAsMember ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        {viewAsMember ? 'Salir de vista miembro' : 'Ver como miembro'}
+                        {viewAsMember ? 'Exit member view' : 'View as member'}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -240,6 +256,16 @@ export function Navbar() {
             >
               <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />
               {n.clients}
+            </Link>
+          )}
+          {selectedCompany && (
+            <Link
+              to="/calendar"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+              onClick={closeMobileMenu}
+            >
+              <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+              {n.calendar}
             </Link>
           )}
           <Link

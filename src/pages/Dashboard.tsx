@@ -3,7 +3,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, User, Package, Settings, Key } from 'lucide-react';
+import { CalendarDays, Clock, User, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ModuleCardProps {
@@ -71,6 +71,12 @@ export default function Dashboard() {
             onClick={() => navigate('/time-tracker')}
           />
           <ModuleCard
+            title={d.calendarTitle}
+            description={d.calendarDesc}
+            icon={<CalendarDays className="h-8 w-8" />}
+            onClick={() => navigate('/calendar')}
+          />
+          <ModuleCard
             title={d.profileTitle}
             description={d.profileDesc}
             icon={<User className="h-8 w-8" />}
@@ -81,12 +87,6 @@ export default function Dashboard() {
             description={d.permissionsDesc}
             icon={<Key className="h-8 w-8" />}
             onClick={() => navigate('/my-permission-requests')}
-          />
-          <ModuleCard
-            title={d.comingSoonTitle}
-            description={d.comingSoonDesc}
-            icon={<Package className="h-8 w-8" />}
-            disabled
           />
         </div>
       </div>
