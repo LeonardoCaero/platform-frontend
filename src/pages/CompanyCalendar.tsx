@@ -474,9 +474,9 @@ export default function CompanyCalendar() {
 
       {/* ── Note form dialog ── */}
       <Dialog open={noteFormOpen} onOpenChange={setNoteFormOpen}>
-        <DialogContent className="max-w-lg w-full max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="p-0 gap-0 max-h-[90dvh] flex flex-col w-[calc(100vw-2rem)] sm:w-full max-w-lg rounded-2xl sm:rounded-2xl">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b shrink-0">
+            <DialogTitle className="text-base font-semibold">
               {editingNote ? cl.editNote : cl.newNote}
               {selectedDay && !editingNote && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -486,7 +486,8 @@ export default function CompanyCalendar() {
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 overflow-y-auto flex-1 px-1">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col gap-4 overflow-y-auto flex-1 px-5 py-4">
             {/* Title */}
             <div className="space-y-1.5">
               <Label htmlFor="note-title">{cl.noteTitle}</Label>
@@ -604,8 +605,10 @@ export default function CompanyCalendar() {
               )}
             </div>}
 
+            </div>
+
             {/* Actions */}
-            <div className="flex gap-2 justify-end pt-2 border-t">
+            <div className="flex gap-2 justify-end px-5 py-4 border-t shrink-0">
               <Button type="button" variant="outline" onClick={() => setNoteFormOpen(false)} disabled={isSaving}>
                 {cl.cancel}
               </Button>
