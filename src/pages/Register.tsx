@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { registerSchema, type RegisterFormData } from '@/schemas/auth.schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ export default function Register() {
   const { register: registerUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -33,8 +35,8 @@ export default function Register() {
     } catch (error: any) {
       toast({
         variant: 'destructive',
-        title: 'Registration failed',
-        description: error.response?.data?.message || 'Something went wrong',
+        title: t.auth.registerError,
+        description: error.response?.data?.message || t.auth.registerError,
       });
     } finally {
       setIsLoading(false);
@@ -48,17 +50,17 @@ export default function Register() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary">
             <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>Enter your details to get started</CardDescription>
+          <CardTitle className="text-2xl font-bold">{t.auth.createAccount}</CardTitle>
+          <CardDescription>{t.auth.registerSubtitle}</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName">{t.auth.fullName}</Label>
               <Input
                 id="fullName"
                 type="text"
-                placeholder="John Doe"
+                placeholder={t.auth.fullNamePlaceholder}
                 {...register('fullName')}
                 disabled={isLoading}
               />
@@ -67,11 +69,11 @@ export default function Register() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder={t.auth.emailPlaceholder}
                 {...register('email')}
                 disabled={isLoading}
               />
@@ -80,11 +82,11 @@ export default function Register() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t.auth.password}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t.auth.passwordPlaceholder}
                 {...register('password')}
                 disabled={isLoading}
               />
@@ -93,11 +95,11 @@ export default function Register() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">{t.auth.confirmPassword}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t.auth.passwordPlaceholder}
                 {...register('confirmPassword')}
                 disabled={isLoading}
               />
@@ -109,12 +111,12 @@ export default function Register() {
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create account
+              {t.auth.signUp}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
+              {t.auth.haveAccount}{' '}
               <Link to="/login" className="font-medium text-primary hover:underline">
-                Sign in
+                {t.auth.signIn}
               </Link>
             </p>
           </CardFooter>

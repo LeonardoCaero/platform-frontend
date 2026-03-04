@@ -2,6 +2,7 @@ import { CompanyStatus, MemberStatus } from '@/types/company.types';
 import { CompanyRequestStatus } from '@/types/company-requests.types';
 import { PermissionRequestStatus } from '@/types/permission-requests.types';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type Status = CompanyStatus | MemberStatus | CompanyRequestStatus | PermissionRequestStatus;
 
@@ -11,6 +12,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, deleted }: StatusBadgeProps) {
+  const { t } = useLanguage();
   const getStatusStyles = () => {
     if (deleted) {
       return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
@@ -60,7 +62,7 @@ export function StatusBadge({ status, deleted }: StatusBadgeProps) {
         getStatusStyles()
       )}
     >
-      {deleted ? 'DELETED' : status}
+      {deleted ? t.nav.deleted : status}
     </span>
   );
 }

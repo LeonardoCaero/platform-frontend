@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +29,8 @@ export default function EditCompany() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const ec = t.editCompany;
   const companyId = id!;
 
   const { data: company, isLoading } = useQuery({
@@ -73,7 +76,7 @@ export default function EditCompany() {
       navigate(`/companies/${companyId}`);
     },
     onError: (error: any) => {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to update company' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || ec.updateError });
     },
   });
 
@@ -98,8 +101,8 @@ export default function EditCompany() {
         <div className="max-w-2xl mx-auto">
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <Building2 className="h-16 w-16 text-muted-foreground" />
-            <h3 className="text-xl font-semibold">Company not found</h3>
-            <Button onClick={() => navigate('/companies')}>Back to Companies</Button>
+            <h3 className="text-xl font-semibold">{ec.notFound}</h3>
+            <Button onClick={() => navigate('/companies')}>{ec.backToCompanies}</Button>
           </div>
         </div>
       </DashboardLayout>
@@ -112,25 +115,25 @@ export default function EditCompany() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Building2 className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Edit Company</h1>
+            <h1 className="text-3xl font-bold">{ec.title}</h1>
           </div>
           <p className="text-muted-foreground">
-            Update information for {company.name}
+            {ec.subtitle} {company.name}
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Company Information</CardTitle>
+            <CardTitle>{ec.cardTitle}</CardTitle>
             <CardDescription>
-              Make changes to the company details below
+              {ec.cardDesc}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Company Name <span className="text-destructive">*</span>
+                  {ec.companyName} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -144,7 +147,7 @@ export default function EditCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="slug">
-                  Slug <span className="text-destructive">*</span>
+                  {ec.slug} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="slug"
@@ -152,7 +155,7 @@ export default function EditCompany() {
                   {...form.register('slug')}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Only lowercase letters, numbers, and hyphens allowed
+                  {ec.slugHint}
                 </p>
                 {form.formState.errors.slug && (
                   <p className="text-sm text-destructive">{form.formState.errors.slug.message}</p>
@@ -160,7 +163,7 @@ export default function EditCompany() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="logo">Logo URL</Label>
+                <Label htmlFor="logo">{ec.logoUrl}</Label>
                 <Input
                   id="logo"
                   type="url"
@@ -173,7 +176,7 @@ export default function EditCompany() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{ec.description}</Label>
                 <Textarea
                   id="description"
                   placeholder="Tell us about your company..."
@@ -187,18 +190,18 @@ export default function EditCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="status">
-                  Status <span className="text-destructive">*</span>
+                  {ec.status} <span className="text-destructive">*</span>
                 </Label>
                 <Select
                   value={form.watch('status')}
                   onValueChange={(value) => form.setValue('status', value as CompanyStatus)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder={ec.statusPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={CompanyStatus.ACTIVE}>Active</SelectItem>
-                    <SelectItem value={CompanyStatus.SUSPENDED}>Suspended</SelectItem>
+                    <SelectItem value={CompanyStatus.ACTIVE}>{ec.statusActive}</SelectItem>
+                    <SelectItem value={CompanyStatus.SUSPENDED}>{ec.statusSuspended}</SelectItem>
                   </SelectContent>
                 </Select>
                 {form.formState.errors.status && (
@@ -213,7 +216,7 @@ export default function EditCompany() {
                   onClick={() => navigate(`/companies/${companyId}`)}
                   disabled={updateMutation.isPending}
                 >
-                  Cancel
+                  {ec.cancel}
                 </Button>
                 <Button
                   type="submit"
@@ -221,7 +224,7 @@ export default function EditCompany() {
                 >
                   {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   <Save className="h-4 w-4 mr-2" />
-                  Save Changes
+                  {ec.save}
                 </Button>
               </div>
             </form>

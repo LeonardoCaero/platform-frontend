@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { CompanyHeader } from '@/components/company/CompanyHeader';
 import { OverviewTab } from '@/components/company/OverviewTab';
@@ -30,6 +31,8 @@ export default function CompanyDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  const cd = t.companyDetail;
   const { isOwnerOf, getMembershipId, selectedCompany, setSelectedCompany, refreshUser } = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
@@ -63,7 +66,7 @@ export default function CompanyDetail() {
   const deleteMutation = useMutation({
     mutationFn: () => companiesService.deleteCompany(companyId),
     onSuccess: () => {
-      toast({ title: 'Company has been deleted' });
+      toast({ title: cd.toastDeleted });
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       // Deselect if this was the active company
       if (selectedCompany?.id === companyId) {
@@ -73,26 +76,26 @@ export default function CompanyDetail() {
       setDeleteDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to delete company' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || cd.toastDeleteError });
     },
   });
 
   const restoreMutation = useMutation({
     mutationFn: () => companiesService.restoreCompany(companyId),
     onSuccess: () => {
-      toast({ title: 'Company has been restored' });
+      toast({ title: cd.toastRestored });
       queryClient.invalidateQueries({ queryKey: ['company', companyId] });
       setRestoreDialogOpen(false);
     },
     onError: (error: any) => {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to restore company' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || cd.toastRestoreError });
     },
   });
 
   const leaveMutation = useMutation({
     mutationFn: () => companyMembersService.removeMember(companyId, membershipId!),
     onSuccess: () => {
-      toast({ title: 'You have left the company' });
+      toast({ title: cd.toastLeft });
       if (selectedCompany?.id === companyId) {
         setSelectedCompany(null);
       }
@@ -100,7 +103,7 @@ export default function CompanyDetail() {
       navigate('/companies');
     },
     onError: (error: any) => {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to leave company' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || cd.toastLeaveError });
     },
   });
 
@@ -119,7 +122,7 @@ export default function CompanyDetail() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Company not found</p>
+          <p className="text-muted-foreground">{cd.notFound}</p>
         </div>
       </DashboardLayout>
     );
@@ -140,21 +143,21 @@ export default function CompanyDetail() {
           <TabsList>
             <TabsTrigger value="overview">
               <Info className="h-4 w-4 mr-2" />
-              Overview
+              {cd.tabOverview}
             </TabsTrigger>
             <TabsTrigger value="members">
               <Users className="h-4 w-4 mr-2" />
-              Members
+              {cd.tabMembers}
             </TabsTrigger>
             {isOwner && (
               <TabsTrigger value="roles">
                 <Shield className="h-4 w-4 mr-2" />
-                Roles
+                {cd.tabRoles}
               </TabsTrigger>
             )}
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 mr-2" />
-              Settings
+              {cd.tabSettings}
             </TabsTrigger>
           </TabsList>
 
@@ -186,21 +189,20 @@ export default function CompanyDetail() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Company</AlertDialogTitle>
+            <AlertDialogTitle>{cd.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{company.name}</strong>?
+              {cd.deleteDesc} <strong>{company.name}</strong>?
               <br /><br />
-              This will soft delete the company with {company._count?.memberships || 0} member(s).
-              It can be restored later.
+              {cd.deleteWarning} {company._count?.memberships || 0} {cd.deleteMemberCount}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{cd.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteMutation.mutate()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
+              {cd.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -209,15 +211,15 @@ export default function CompanyDetail() {
       <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore Company</AlertDialogTitle>
+            <AlertDialogTitle>{cd.restoreTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore <strong>{company.name}</strong>?
+              {cd.restoreDesc} <strong>{company.name}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{cd.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={() => restoreMutation.mutate()}>
-              Restore
+              {cd.restore}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -226,20 +228,20 @@ export default function CompanyDetail() {
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Leave Company</AlertDialogTitle>
+            <AlertDialogTitle>{cd.leaveTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to leave <strong>{company.name}</strong>?
+              {cd.leaveDesc} <strong>{company.name}</strong>?
               <br /><br />
-              You will immediately lose access to this company and all its resources.
+              {cd.leaveWarning}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{cd.cancel}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => leaveMutation.mutate()}
               className="bg-orange-500 text-white hover:bg-orange-600"
             >
-              Leave
+              {cd.leave}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

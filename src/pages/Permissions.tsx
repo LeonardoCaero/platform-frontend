@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -47,6 +48,8 @@ import { Shield, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Search } from 
 
 export default function Permissions() {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const p = t.permissions;
   const [search, setSearch] = useState('');
   const [scopeFilter, setScopeFilter] = useState<PermissionScope | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
@@ -101,7 +104,7 @@ export default function Permissions() {
     e.preventDefault();
     
     if (!isKeyValid) {
-      toast({ variant: 'destructive', title: 'Invalid permission key format' });
+      toast({ variant: 'destructive', title: p.toastInvalidKey });
       return;
     }
     
@@ -111,12 +114,12 @@ export default function Permissions() {
         description,
         scope,
       });
-      toast({ title: 'Permission created successfully' });
+      toast({ title: p.toastCreated });
       setIsCreateDialogOpen(false);
       resetForm();
       refetch();
     } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to create permission' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || p.toastCreateError });
     }
   };
 
@@ -156,7 +159,7 @@ export default function Permissions() {
     if (!editingPermission) return;
 
     if (!isKeyValid) {
-      toast({ variant: 'destructive', title: 'Invalid permission key format' });
+      toast({ variant: 'destructive', title: p.toastInvalidKey });
       return;
     }
 
@@ -166,13 +169,13 @@ export default function Permissions() {
         description,
         scope,
       });
-      toast({ title: 'Permission updated successfully' });
+      toast({ title: p.toastUpdated });
       setIsEditDialogOpen(false);
       setEditingPermission(null);
       resetForm();
       refetch();
     } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to update permission' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || p.toastUpdateError });
     }
   };
 
@@ -181,11 +184,11 @@ export default function Permissions() {
 
     try {
       await permissionsService.deletePermission(permissionToDelete.id);
-      toast({ title: 'Permission deleted successfully' });
+      toast({ title: p.toastDeleted });
       setPermissionToDelete(null);
       refetch();
     } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to delete permission' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || p.toastDeleteError });
     }
   };
 
@@ -208,15 +211,15 @@ export default function Permissions() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Shield className="h-8 w-8" />
-              <h1 className="text-3xl font-bold">Permissions</h1>
+              <h1 className="text-3xl font-bold">{p.title}</h1>
             </div>
             <p className="text-muted-foreground">
-              Manage global platform permissions
+              {p.subtitle}
             </p>
           </div>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Permission
+            {p.createBtn}
           </Button>
         </div>
 
@@ -225,7 +228,7 @@ export default function Permissions() {
           <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by key or description..."
+              placeholder={p.searchPlaceholder}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-9"
@@ -234,12 +237,12 @@ export default function Permissions() {
 
           <Select value={scopeFilter} onValueChange={handleScopeFilterChange}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by scope" />
+              <SelectValue placeholder={p.filterScope} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Scopes</SelectItem>
-              <SelectItem value={PermissionScope.GLOBAL}>Global</SelectItem>
-              <SelectItem value={PermissionScope.COMPANY}>Company</SelectItem>
+              <SelectItem value="ALL">{p.allScopes}</SelectItem>
+              <SelectItem value={PermissionScope.GLOBAL}>{p.global}</SelectItem>
+              <SelectItem value={PermissionScope.COMPANY}>{p.company}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -254,16 +257,16 @@ export default function Permissions() {
         ) : !data?.data.length ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-4">
             <Shield className="h-16 w-16 text-muted-foreground" />
-            <h3 className="text-xl font-semibold">No permissions found</h3>
+            <h3 className="text-xl font-semibold">{p.noPermissionsTitle}</h3>
             <p className="text-muted-foreground text-center">
               {search || scopeFilter !== 'ALL'
-                ? 'Try adjusting your filters'
-                : 'Get started by creating your first permission'}
+                ? p.noPermissionsFiltered
+                : p.noPermissionsEmpty}
             </p>
             {!search && scopeFilter === 'ALL' && (
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Permission
+                {p.createBtn}
               </Button>
             )}
           </div>
@@ -273,12 +276,12 @@ export default function Permissions() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Key</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Scope</TableHead>
-                    <TableHead className="text-center">Roles</TableHead>
-                    <TableHead className="text-center">Users</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{p.colKey}</TableHead>
+                    <TableHead>{p.colDescription}</TableHead>
+                    <TableHead>{p.colScope}</TableHead>
+                    <TableHead className="text-center">{p.colRoles}</TableHead>
+                    <TableHead className="text-center">{p.colUsers}</TableHead>
+                    <TableHead className="text-right">{p.colActions}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -330,29 +333,29 @@ export default function Permissions() {
             {pagination && pagination.totalPages > 1 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing {(page - 1) * limit + 1} to{' '}
-                  {Math.min(page * limit, pagination.total)} of {pagination.total} permissions
+                  {p.showingStart} {(page - 1) * limit + 1} {p.showingTo}{' '}
+                  {Math.min(page * limit, pagination.total)} {p.showingOf} {pagination.total} {p.permissionsLabel}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                     disabled={page === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    {p.previous}
                   </Button>
                   <span className="text-sm">
-                    Page {page} of {pagination.totalPages}
+                    {p.pageOf} {page} {p.ofPages} {pagination.totalPages}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
                     disabled={page === pagination.totalPages}
                   >
-                    Next
+                    {p.next}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -369,19 +372,19 @@ export default function Permissions() {
       }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create Permission</DialogTitle>
+            <DialogTitle>{p.createTitle}</DialogTitle>
             <DialogDescription>
-              Create a new global permission following the RESOURCE:ACTION format
+              {p.createDesc}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreatePermission}>
             <div className="space-y-4 py-4">
               {/* Resource Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="resource">Resource Category *</Label>
+                <Label htmlFor="resource">{p.resourceLabel}</Label>
                 <Select value={resource} onValueChange={setResource}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a resource..." />
+                    <SelectValue placeholder={p.resourcePlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
                     {STANDARD_RESOURCES.map((res) => (
@@ -399,26 +402,26 @@ export default function Permissions() {
               {/* Custom Resource Input */}
               {resource === 'CUSTOM' && (
                 <div className="space-y-2">
-                  <Label htmlFor="customResource">Custom Resource Name *</Label>
+                  <Label htmlFor="customResource">{p.customResourceLabel}</Label>
                   <Input
                     id="customResource"
-                    placeholder="e.g., PROJECT, DOCUMENT"
+                    placeholder={p.customResourcePlaceholder}
                     value={customResource}
                     onChange={(e) => setCustomResource(e.target.value.toUpperCase().replace(/[^A-Z_]/g, ''))}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use uppercase letters and underscores only
+                    {p.uppercaseHint}
                   </p>
                 </div>
               )}
 
               {/* Action Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="action">Action *</Label>
+                <Label htmlFor="action">{p.actionLabel}</Label>
                 <Select value={action} onValueChange={setAction}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an action..." />
+                    <SelectValue placeholder={p.actionPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
                     {STANDARD_ACTIONS.map((act) => (
@@ -436,16 +439,16 @@ export default function Permissions() {
               {/* Custom Action Input */}
               {action === 'CUSTOM' && (
                 <div className="space-y-2">
-                  <Label htmlFor="customAction">Custom Action Name *</Label>
+                  <Label htmlFor="customAction">{p.customActionLabel}</Label>
                   <Input
                     id="customAction"
-                    placeholder="e.g., PUBLISH, ARCHIVE"
+                    placeholder={p.customActionPlaceholder}
                     value={customAction}
                     onChange={(e) => setCustomAction(e.target.value.toUpperCase().replace(/[^A-Z_]/g, ''))}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use uppercase letters and underscores only
+                    {p.uppercaseHint}
                   </p>
                 </div>
               )}
@@ -453,13 +456,13 @@ export default function Permissions() {
               {/* Permission Key Preview */}
               {permissionKey && (
                 <div className="space-y-2 p-4 bg-muted rounded-lg">
-                  <Label className="text-sm font-medium">📋 Permission Key Preview</Label>
+                  <Label className="text-sm font-medium">{p.keyPreview}</Label>
                   <div className={`font-mono text-lg font-bold ${isKeyValid ? 'text-green-600' : 'text-red-500'}`}>
-                    {permissionKey || '(empty)'}
+                    {permissionKey || p.keyEmpty}
                   </div>
                   {!isKeyValid && permissionKey && (
                     <p className="text-xs text-red-500">
-                      Invalid format. Must be RESOURCE:ACTION
+                      {p.keyInvalid}
                     </p>
                   )}
                 </div>
@@ -467,10 +470,10 @@ export default function Permissions() {
 
               {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="description">Description (optional)</Label>
+                <Label htmlFor="description">{p.descriptionLabel}</Label>
                 <Input
                   id="description"
-                  placeholder="Brief description of this permission"
+                  placeholder={p.descriptionPlaceholder}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -478,7 +481,7 @@ export default function Permissions() {
 
               {/* Scope */}
               <div className="space-y-2">
-                <Label htmlFor="scope">Scope *</Label>
+                <Label htmlFor="scope">{p.scopeLabel}</Label>
                 <Select
                   value={scope}
                   onValueChange={(value) => setScope(value as PermissionScope)}
@@ -489,14 +492,14 @@ export default function Permissions() {
                   <SelectContent>
                     <SelectItem value={PermissionScope.GLOBAL}>
                       <div className="flex flex-col items-start">
-                        <span>Global</span>
-                        <span className="text-xs text-muted-foreground">Platform-wide permission</span>
+                        <span>{p.global}</span>
+                        <span className="text-xs text-muted-foreground">{p.globalDesc}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={PermissionScope.COMPANY}>
                       <div className="flex flex-col items-start">
-                        <span>Company</span>
-                        <span className="text-xs text-muted-foreground">Company-scoped permission</span>
+                        <span>{p.company}</span>
+                        <span className="text-xs text-muted-foreground">{p.companyDesc}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -505,10 +508,10 @@ export default function Permissions() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                Cancel
+                {p.cancel}
               </Button>
               <Button type="submit" disabled={!isKeyValid}>
-                Create Permission
+                {p.createSave}
               </Button>
             </DialogFooter>
           </form>
@@ -522,19 +525,19 @@ export default function Permissions() {
       }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit Permission</DialogTitle>
+            <DialogTitle>{p.editTitle}</DialogTitle>
             <DialogDescription>
-              Update permission details following the RESOURCE:ACTION format
+              {p.editDesc}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdatePermission}>
             <div className="space-y-4 py-4">
               {/* Resource Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="edit-resource">Resource Category *</Label>
+                <Label htmlFor="edit-resource">{p.resourceLabel}</Label>
                 <Select value={resource} onValueChange={setResource}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a resource..." />
+                    <SelectValue placeholder={p.resourcePlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
                     {STANDARD_RESOURCES.map((res) => (
@@ -552,26 +555,26 @@ export default function Permissions() {
               {/* Custom Resource Input */}
               {resource === 'CUSTOM' && (
                 <div className="space-y-2">
-                  <Label htmlFor="edit-customResource">Custom Resource Name *</Label>
+                  <Label htmlFor="edit-customResource">{p.customResourceLabel}</Label>
                   <Input
                     id="edit-customResource"
-                    placeholder="e.g., PROJECT, DOCUMENT"
+                    placeholder={p.customResourcePlaceholder}
                     value={customResource}
                     onChange={(e) => setCustomResource(e.target.value.toUpperCase().replace(/[^A-Z_]/g, ''))}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use uppercase letters and underscores only
+                    {p.uppercaseHint}
                   </p>
                 </div>
               )}
 
               {/* Action Dropdown */}
               <div className="space-y-2">
-                <Label htmlFor="edit-action">Action *</Label>
+                <Label htmlFor="edit-action">{p.actionLabel}</Label>
                 <Select value={action} onValueChange={setAction}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an action..." />
+                    <SelectValue placeholder={p.actionPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
                     {STANDARD_ACTIONS.map((act) => (
@@ -589,16 +592,16 @@ export default function Permissions() {
               {/* Custom Action Input */}
               {action === 'CUSTOM' && (
                 <div className="space-y-2">
-                  <Label htmlFor="edit-customAction">Custom Action Name *</Label>
+                  <Label htmlFor="edit-customAction">{p.customActionLabel}</Label>
                   <Input
                     id="edit-customAction"
-                    placeholder="e.g., PUBLISH, ARCHIVE"
+                    placeholder={p.customActionPlaceholder}
                     value={customAction}
                     onChange={(e) => setCustomAction(e.target.value.toUpperCase().replace(/[^A-Z_]/g, ''))}
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Use uppercase letters and underscores only
+                    {p.uppercaseHint}
                   </p>
                 </div>
               )}
@@ -606,13 +609,13 @@ export default function Permissions() {
               {/* Permission Key Preview */}
               {permissionKey && (
                 <div className="space-y-2 p-4 bg-muted rounded-lg">
-                  <Label className="text-sm font-medium">📋 Permission Key Preview</Label>
+                  <Label className="text-sm font-medium">{p.keyPreview}</Label>
                   <div className={`font-mono text-lg font-bold ${isKeyValid ? 'text-green-600' : 'text-red-500'}`}>
-                    {permissionKey || '(empty)'}
+                    {permissionKey || p.keyEmpty}
                   </div>
                   {!isKeyValid && permissionKey && (
                     <p className="text-xs text-red-500">
-                      Invalid format. Must be RESOURCE:ACTION
+                      {p.keyInvalid}
                     </p>
                   )}
                 </div>
@@ -620,10 +623,10 @@ export default function Permissions() {
 
               {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="edit-description">Description (optional)</Label>
+                <Label htmlFor="edit-description">{p.descriptionLabel}</Label>
                 <Input
                   id="edit-description"
-                  placeholder="Brief description of this permission"
+                  placeholder={p.descriptionPlaceholder}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -631,7 +634,7 @@ export default function Permissions() {
 
               {/* Scope */}
               <div className="space-y-2">
-                <Label htmlFor="edit-scope">Scope *</Label>
+                <Label htmlFor="edit-scope">{p.scopeLabel}</Label>
                 <Select
                   value={scope}
                   onValueChange={(value) => setScope(value as PermissionScope)}
@@ -642,14 +645,14 @@ export default function Permissions() {
                   <SelectContent>
                     <SelectItem value={PermissionScope.GLOBAL}>
                       <div className="flex flex-col">
-                        <span>Global</span>
-                        <span className="text-xs text-muted-foreground">Platform-wide permission</span>
+                        <span>{p.global}</span>
+                        <span className="text-xs text-muted-foreground">{p.globalDesc}</span>
                       </div>
                     </SelectItem>
                     <SelectItem value={PermissionScope.COMPANY}>
                       <div className="flex flex-col">
-                        <span>Company</span>
-                        <span className="text-xs text-muted-foreground">Company-scoped permission</span>
+                        <span>{p.company}</span>
+                        <span className="text-xs text-muted-foreground">{p.companyDesc}</span>
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -658,10 +661,10 @@ export default function Permissions() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
+                {p.cancel}
               </Button>
               <Button type="submit" disabled={!isKeyValid}>
-                Save Changes
+                {p.editSave}
               </Button>
             </DialogFooter>
           </form>
@@ -672,17 +675,17 @@ export default function Permissions() {
       <AlertDialog open={!!permissionToDelete} onOpenChange={() => setPermissionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{p.deleteConfirmTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the permission{' '}
+              {p.deleteConfirmDesc}{' '}
               <span className="font-mono font-semibold">{permissionToDelete?.key}</span>.
-              This action cannot be undone.
+              {p.deleteConfirmWarning}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{p.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm}>
-              Delete
+              {p.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

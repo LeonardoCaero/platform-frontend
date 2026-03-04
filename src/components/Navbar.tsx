@@ -53,8 +53,8 @@ export function Navbar() {
     <>
       {viewAsMember && (
         <div className="sticky top-0 z-50 flex items-center justify-between gap-3 bg-amber-500 px-4 py-1.5 text-xs font-medium text-amber-950">
-          <span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Vista como miembro — las opciones de administración están ocultas</span>
-          <button onClick={toggleViewAsMember} className="underline hover:no-underline">Salir</button>
+          <span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />{n.memberBanner}</span>
+          <button onClick={toggleViewAsMember} className="underline hover:no-underline">{n.exitBanner}</button>
         </div>
       )}
       <nav className="border-b bg-card sticky top-0 z-40">
@@ -144,18 +144,18 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={toggleTheme} className="flex items-center gap-2">
                     {theme === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                    {theme === 'light' ? 'Light' : 'Dark'}
+                    {theme === 'light' ? n.lightTheme : n.darkTheme}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={toggleLanguage} className="flex items-center gap-2">
                     <span className="text-base leading-none">{language === 'en' ? '🇪🇸' : '🇬🇧'}</span>
-                    {language === 'en' ? 'ES' : 'EN'}
+                    {language === 'en' ? n.switchToEs : n.switchToEn}
                   </DropdownMenuItem>
                   {hasElevatedRole && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={toggleViewAsMember} className="flex items-center gap-2">
                         {viewAsMember ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        {viewAsMember ? 'Exit member view' : 'View as member'}
+                        {viewAsMember ? n.exitMemberView : n.viewAsMember}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -337,7 +337,7 @@ export function Navbar() {
               className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-500/10 transition-colors"
             >
               {viewAsMember ? <EyeOff className="h-4 w-4 shrink-0" /> : <Eye className="h-4 w-4 shrink-0" />}
-              {viewAsMember ? 'Salir de vista miembro' : 'Ver como miembro'}
+              {viewAsMember ? n.exitMemberView : n.viewAsMember}
             </button>
           )}
           <button

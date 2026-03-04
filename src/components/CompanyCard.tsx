@@ -5,6 +5,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Edit, Trash2, Users, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompanyCardProps {
   company: Company;
@@ -17,6 +18,7 @@ interface CompanyCardProps {
 
 export function CompanyCard({ company, onDelete, onRestore, canEdit = true, canDelete = true, canRestore = false }: CompanyCardProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const getInitials = (name: string) => {
     return name
@@ -70,7 +72,7 @@ export function CompanyCard({ company, onDelete, onRestore, canEdit = true, canD
             onClick={(e) => { e.stopPropagation(); onRestore?.(company); }}
           >
             <RotateCcw className="h-4 w-4 mr-1" />
-            Restore
+            {t.companyCard.restore}
           </Button>
         )}
         {canEdit && !company.deletedAt && (
@@ -80,7 +82,7 @@ export function CompanyCard({ company, onDelete, onRestore, canEdit = true, canD
             onClick={() => navigate(`/companies/${company.id}/edit`)}
           >
             <Edit className="h-4 w-4 mr-1" />
-            Edit
+            {t.companyCard.edit}
           </Button>
         )}
         {canDelete && !company.deletedAt && (
@@ -93,7 +95,7 @@ export function CompanyCard({ company, onDelete, onRestore, canEdit = true, canD
             }}
           >
             <Trash2 className="h-4 w-4 mr-1" />
-            Delete
+            {t.companyCard.delete}
           </Button>
         )}
       </CardFooter>

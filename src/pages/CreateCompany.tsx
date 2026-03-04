@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +29,8 @@ export default function CreateCompany() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { hasGlobalPermission, user, isLoading } = useAuth();
+  const { t } = useLanguage();
+  const cc = t.createCompany;
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,8 +40,8 @@ export default function CreateCompany() {
   
     if (!hasGlobalPermission('COMPANY:CREATE')) {
       toast({
-        title: 'Access Denied',
-        description: 'You do not have permission to create companies',
+        title: cc.accessDeniedTitle,
+        description: cc.accessDeniedDesc,
         variant: 'destructive',
       });
       navigate('/dashboard');
@@ -123,8 +126,8 @@ export default function CreateCompany() {
   const handleNext = () => {
     if (currentStep === 1 && !canProceedStep1) {
       toast({
-        title: 'Invalid data',
-        description: 'Please fill in all required fields with valid data',
+        title: cc.invalidData,
+        description: cc.invalidDataDesc,
         variant: 'destructive',
       });
       return;
@@ -153,15 +156,15 @@ export default function CreateCompany() {
       }
 
       toast({
-        title: 'Company created!',
-        description: `${company.name} has been successfully created${selectedUsers.length > 0 ? `. ${selectedUsers.length} member(s) added.` : '.'}`,
+        title: cc.successTitle,
+        description: `${company.name}${selectedUsers.length > 0 ? ` — ${selectedUsers.length} ${cc.selectedCount}` : ''}`,
       });
 
       navigate(`/companies/${company.id}`);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create company',
+        title: cc.errorTitle,
+        description: error.response?.data?.message || cc.errorDesc,
         variant: 'destructive',
       });
     } finally {
@@ -190,10 +193,10 @@ export default function CreateCompany() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Building2 className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Create New Company</h1>
+            <h1 className="text-3xl font-bold">{cc.title}</h1>
           </div>
           <p className="text-muted-foreground">
-            Follow the steps to set up your new company
+            {cc.subtitle}
           </p>
         </div>
 
@@ -224,23 +227,23 @@ export default function CreateCompany() {
         </div>
 
         <div className="text-center text-sm text-muted-foreground">
-          Step {currentStep} of 3:{' '}
-          {currentStep === 1 && 'Company Information'}
-          {currentStep === 2 && 'Invite Team Members'}
-          {currentStep === 3 && 'Review & Create'}
+          {cc.stepOf} {currentStep} {cc.of3}:{' '}
+          {currentStep === 1 && cc.stepInfo}
+          {currentStep === 2 && cc.stepMembers}
+          {currentStep === 3 && cc.stepReview}
         </div>
 
         {/* Step 1: Company Information */}
         {currentStep === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>Company Information</CardTitle>
-              <CardDescription>Enter the basic details for your new company</CardDescription>
+              <CardTitle>{cc.infoTitle}</CardTitle>
+              <CardDescription>{cc.infoDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Company Name <span className="text-destructive">*</span>
+                  {cc.companyName} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -253,7 +256,7 @@ export default function CreateCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="slug">
-                  Company Slug <span className="text-destructive">*</span>
+                  {cc.companySlug} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="slug"
@@ -265,25 +268,25 @@ export default function CreateCompany() {
                 {isCheckingSlug && (
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Checking availability...
+                    {cc.checkingSlug}
                   </p>
                 )}
                 {!isCheckingSlug && slugAvailable === true && (
                   <p className="text-sm text-green-600 flex items-center gap-2">
                     <CheckCircle className="h-3 w-3" />
-                    Slug is available
+                    {cc.slugAvailable}
                   </p>
                 )}
                 {!isCheckingSlug && slugAvailable === false && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-3 w-3" />
-                    Slug is already taken
+                    {cc.slugTaken}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="logo">Logo URL (optional)</Label>
+                <Label htmlFor="logo">{cc.logoUrl}</Label>
                 <Input
                   id="logo"
                   type="url"
@@ -294,13 +297,13 @@ export default function CreateCompany() {
                 {companyData.logo && (
                   <div className="flex items-center gap-2">
                     <img src={companyData.logo} alt="Logo preview" className="h-10 w-10 rounded" />
-                    <span className="text-sm text-muted-foreground">Preview</span>
+                    <span className="text-sm text-muted-foreground">{cc.preview}</span>
                   </div>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description (optional)</Label>
+                <Label htmlFor="description">{cc.description}</Label>
                 <Textarea
                   id="description"
                   placeholder="Brief description of your company..."
@@ -312,10 +315,10 @@ export default function CreateCompany() {
 
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={() => navigate('/companies')}>
-                  Cancel
+                  {cc.cancel}
                 </Button>
                 <Button onClick={handleNext} disabled={!canProceedStep1}>
-                  Next
+                  {cc.next}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -327,9 +330,9 @@ export default function CreateCompany() {
         {currentStep === 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>Invite Team Members</CardTitle>
+              <CardTitle>{cc.membersTitle}</CardTitle>
               <CardDescription>
-                Add members from the platform to your company (optional — you can skip this step)
+                {cc.membersDesc}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -337,7 +340,7 @@ export default function CreateCompany() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or email..."
+                  placeholder={cc.searchPlaceholder}
                   className="pl-9"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
@@ -362,7 +365,7 @@ export default function CreateCompany() {
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
                     <UserX className="h-8 w-8" />
                     <p className="text-sm">
-                      {userSearch ? 'No users found matching your search' : 'No users available'}
+                      {userSearch ? cc.noUsersSearch : cc.noUsers}
                     </p>
                   </div>
                 ) : (
@@ -397,17 +400,17 @@ export default function CreateCompany() {
               {/* Selected summary */}
               {selectedUsers.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  {selectedUsers.length} member{selectedUsers.length !== 1 ? 's' : ''} selected
+                  {selectedUsers.length} {cc.selectedCount}
                 </p>
               )}
 
               <div className="flex justify-between pt-2">
                 <Button variant="outline" onClick={handleBack}>
                   <ChevronLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {cc.back}
                 </Button>
                 <Button onClick={handleNext}>
-                  {selectedUsers.length > 0 ? `Next (${selectedUsers.length} selected)` : 'Skip'}
+                  {selectedUsers.length > 0 ? `${cc.next} (${selectedUsers.length} ${cc.selectedCount})` : cc.skip}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -419,16 +422,16 @@ export default function CreateCompany() {
         {currentStep === 3 && (
           <Card>
             <CardHeader>
-              <CardTitle>Review & Create</CardTitle>
-              <CardDescription>Review your company details and create</CardDescription>
+              <CardTitle>{cc.reviewTitle}</CardTitle>
+              <CardDescription>{cc.reviewDesc}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Company Info Summary */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">Company Information</h3>
+                  <h3 className="font-semibold">{cc.companyInfoSection}</h3>
                   <Button variant="ghost" size="sm" onClick={() => setCurrentStep(1)}>
-                    Edit
+                    {cc.edit}
                   </Button>
                 </div>
                 <div className="rounded-lg border p-4 space-y-2">
@@ -451,14 +454,14 @@ export default function CreateCompany() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold">
-                    Team Members {selectedUsers.length > 0 && `(${selectedUsers.length})`}
+                    {cc.teamSection} {selectedUsers.length > 0 && `(${selectedUsers.length})`}
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => setCurrentStep(2)}>
-                    Edit
+                    {cc.edit}
                   </Button>
                 </div>
                 {selectedUsers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No team members selected</p>
+                  <p className="text-sm text-muted-foreground">{cc.noMembers}</p>
                 ) : (
                   <div className="rounded-lg border divide-y">
                     {selectedUsers.map((u) => (
@@ -480,11 +483,11 @@ export default function CreateCompany() {
               <div className="flex justify-between pt-4">
                 <Button variant="outline" onClick={handleBack}>
                   <ChevronLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {cc.back}
                 </Button>
                 <Button onClick={handleSubmit} disabled={isSubmitting} size="lg">
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Company
+                  {cc.create}
                 </Button>
               </div>
             </CardContent>

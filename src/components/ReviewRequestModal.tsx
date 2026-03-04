@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { CompanyRequest } from '@/types/company-requests.types';
 import { companyRequestsService } from '@/services/company-requests.service';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -26,6 +27,8 @@ interface ReviewRequestModalProps {
 
 export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: ReviewRequestModalProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const rm = t.reviewModal;
   const [isLoading, setIsLoading] = useState(false);
   const [reviewNotes, setReviewNotes] = useState('');
 
@@ -40,8 +43,8 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
       });
 
       toast({
-        title: action === 'approve' ? 'Request Approved' : 'Request Rejected',
-        description: `Company request ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
+        title: action === 'approve' ? rm.toastApproved : rm.toastRejected,
+        description: action === 'approve' ? rm.toastApprovedDesc : rm.toastRejectedDesc,
       });
 
       onSuccess();
@@ -49,8 +52,8 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
       setReviewNotes('');
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || `Failed to ${action} request`,
+        title: rm.toastError,
+        description: error.response?.data?.message || rm.toastErrorDesc,
         variant: 'destructive',
       });
     } finally {
@@ -64,34 +67,34 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Review Company Request</DialogTitle>
+          <DialogTitle>{rm.title}</DialogTitle>
           <DialogDescription>
-            Review the details and approve or reject this company creation request
+            {rm.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Company Name</Label>
+              <Label className="text-xs text-muted-foreground">{rm.companyName}</Label>
               <p className="text-sm font-medium">{request.companyName}</p>
             </div>
 
             <div>
-              <Label className="text-xs text-muted-foreground">Company Slug</Label>
+              <Label className="text-xs text-muted-foreground">{rm.companySlug}</Label>
               <p className="text-sm font-mono">{request.companySlug}</p>
             </div>
 
             {request.description && (
               <div>
-                <Label className="text-xs text-muted-foreground">Description</Label>
+                <Label className="text-xs text-muted-foreground">{rm.descriptionField}</Label>
                 <p className="text-sm">{request.description}</p>
               </div>
             )}
 
             {request.reason && (
               <div>
-                <Label className="text-xs text-muted-foreground">Reason</Label>
+                <Label className="text-xs text-muted-foreground">{rm.reason}</Label>
                 <p className="text-sm">{request.reason}</p>
               </div>
             )}
@@ -100,14 +103,14 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
 
             {request.user && (
               <div>
-                <Label className="text-xs text-muted-foreground">Requested By</Label>
+                <Label className="text-xs text-muted-foreground">{rm.requestedBy}</Label>
                 <p className="text-sm font-medium">{request.user.fullName}</p>
                 <p className="text-xs text-muted-foreground">{request.user.email}</p>
               </div>
             )}
 
             <div>
-              <Label className="text-xs text-muted-foreground">Submitted Date</Label>
+              <Label className="text-xs text-muted-foreground">{rm.submittedDate}</Label>
               <p className="text-sm">{format(new Date(request.createdAt), 'PPpp')}</p>
             </div>
           </div>
@@ -115,10 +118,10 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
           <Separator />
 
           <div className="space-y-2">
-            <Label htmlFor="reviewNotes">Review Notes (optional)</Label>
+            <Label htmlFor="reviewNotes">{rm.reviewNotes}</Label>
             <Textarea
               id="reviewNotes"
-              placeholder="Add any notes about your decision..."
+              placeholder={rm.reviewNotesPlaceholder}
               value={reviewNotes}
               onChange={(e) => setReviewNotes(e.target.value)}
               rows={4}
@@ -133,7 +136,7 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
           >
-            Cancel
+            {rm.cancel}
           </Button>
           <Button
             variant="destructive"
@@ -145,7 +148,7 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
             ) : (
               <XCircle className="mr-2 h-4 w-4" />
             )}
-            Reject
+            {rm.reject}
           </Button>
           <Button
             onClick={() => handleReview('approve')}
@@ -157,7 +160,7 @@ export function ReviewRequestModal({ request, open, onOpenChange, onSuccess }: R
             ) : (
               <CheckCircle className="mr-2 h-4 w-4" />
             )}
-            Approve
+            {rm.approve}
           </Button>
         </DialogFooter>
       </DialogContent>
