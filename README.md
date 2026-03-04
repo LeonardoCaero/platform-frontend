@@ -1,35 +1,45 @@
 # Platform Dashboard
 
-Multi-tenant SaaS Dashboard with authentication, user management, and time tracking capabilities.
+Multi-tenant web dashboard with authentication, company management, time tracking, permission control, and real-time notifications.
 
-## 🚀 Features
+## Features
 
-- **Authentication System**: Secure JWT-based authentication with refresh tokens
-- **User Management**: Profile management with avatar support
-- **Time Tracking**: Track and manage time entries
-- **Dark Mode**: Toggle between light and dark themes
-- **Responsive Design**: Mobile-first design with shadcn-ui components
-- **Protected Routes**: Role-based access control
+- **Authentication**: Login/register with JWT and automatic refresh tokens
+- **Multi-company**: Active company selector, member and role management
+- **Company Requests**: Request/review flow for company creation
+- **Permission Management**: Request and manage global permissions
+- **Time Tracking**: Log entries with projects, clients, categories, and summaries
+- **Clients**: Client management with sites and rate rules
+- **Calendar**: Company calendar notes
+- **Real-Time Notifications**: Notification bell via SSE
+- **Dark / Light Mode**: Persistent theme toggle
+- **Internationalization**: Multi-language support (i18n)
+- **Protected Routes**: Permission-based access control
+- **Responsive Design**: shadcn-ui components with Tailwind CSS
 
-## 🛠️ Technologies
+## Tech Stack
 
 - **Framework**: React 18 + TypeScript
-- **Build Tool**: Vite
+- **Build**: Vite
 - **Styling**: Tailwind CSS
-- **UI Components**: shadcn-ui
+- **UI Components**: shadcn-ui (Radix UI)
 - **Routing**: React Router v6
-- **State Management**: React Query + Context API
-- **HTTP Client**: Axios
-- **Form Validation**: React Hook Form + Zod
+- **Server State**: TanStack React Query v5
+- **Client State**: Context API (Auth, Theme, Language)
+- **HTTP**: Axios with automatic refresh token interceptors
+- **Forms**: React Hook Form + Zod
+- **Notifications**: Sonner (toasts)
+- **Charts**: Recharts
+- **Dates**: date-fns
 - **Testing**: Vitest + Testing Library
 
-## 📋 Prerequisites
+## Prerequisites
 
-- Node.js (v18 or higher recommended)
+- Node.js v18+
 - Bun or npm
-- Backend API running on `http://localhost:4000`
+- Backend API running at `http://localhost:4000`
 
-## 🏃 Getting Started
+## Getting Started
 
 ```bash
 # Install dependencies
@@ -45,46 +55,96 @@ npm run dev
 
 The application will be available at `http://localhost:8080`
 
-## 📜 Available Scripts
+## Available Scripts
 
-```bash
-bun run dev          # Start development server
-bun run build        # Build for production
-bun run preview      # Preview production build
-bun run lint         # Run ESLint
-bun run test         # Run tests
-bun run test:watch   # Run tests in watch mode
-```
+| Script | Description |
+|---|---|
+| `bun run dev` | Start development server |
+| `bun run build` | Production build |
+| `bun run build:dev` | Build in development mode |
+| `bun run preview` | Preview production build |
+| `bun run lint` | Run ESLint |
+| `bun run test` | Run tests |
+| `bun run test:watch` | Run tests in watch mode |
 
-## 🔌 Backend Integration
+## Pages
 
-This frontend application connects to a backend API at `http://localhost:4000/api`
+| Page | Route | Description |
+|---|---|---|
+| Login | `/login` | User login |
+| Register | `/register` | User registration |
+| Dashboard | `/` | Main dashboard |
+| Companies | `/companies` | Company listing |
+| Company Detail | `/companies/:id` | Company detail |
+| Create Company | `/companies/new` | Create company |
+| Edit Company | `/companies/:id/edit` | Edit company |
+| Request Company | `/request-company` | Request company creation |
+| Clients | `/clients` | Client management |
+| Time Tracker | `/time-tracker` | Time tracking |
+| Company Calendar | `/calendar` | Calendar notes |
+| Permissions | `/permissions` | Permission management (admin) |
+| Profile | `/profile` | User profile |
+| My Requests | `/my-requests` | My company requests |
+| My Permission Requests | `/my-permission-requests` | My permission requests |
+| Request Permission | `/request-permission` | Request a permission |
+| Admin Company Requests | `/admin/company-requests` | (Admin) Company requests |
+| Admin Permission Requests | `/admin/permission-requests` | (Admin) Permission requests |
 
-Required endpoints:
-- `POST /auth/register` - User registration
-- `POST /auth/login` - User login
-- `POST /auth/logout` - User logout
-- `POST /auth/refresh` - Refresh access token
-- `GET /auth/me` - Get current user
-- Time tracking endpoints for managing time entries
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
-├── components/       # Reusable components
-│   ├── ui/          # shadcn-ui components
-│   ├── Navbar.tsx
-│   ├── DashboardLayout.tsx
-│   └── ProtectedRoute.tsx
-├── contexts/        # React contexts (Auth, Theme)
-├── hooks/           # Custom React hooks
-├── lib/             # Utilities (axios config, utils)
-├── pages/           # Page components
-├── services/        # API service layer
-└── test/            # Test files and setup
+├── App.tsx                  # Route configuration and providers
+├── main.tsx                 # Entry point
+├── components/
+│   ├── ui/                  # shadcn-ui components
+│   ├── company/             # Company-specific components
+│   ├── DashboardLayout.tsx  # Main layout
+│   ├── Navbar.tsx           # Navigation bar
+│   ├── CompanySelector.tsx  # Active company selector
+│   ├── NotificationBell.tsx # Real-time notifications
+│   ├── ProtectedRoute.tsx   # Route guard
+│   ├── StatusBadge.tsx      # Status badge
+│   ├── ThemeToggle.tsx      # Theme toggle
+│   ├── LanguageToggle.tsx   # Language toggle
+│   └── ReviewRequestModal.tsx
+├── contexts/
+│   ├── AuthContext.tsx      # Authentication state
+│   ├── ThemeContext.tsx     # Light/dark theme
+│   └── LanguageContext.tsx  # UI language
+├── hooks/
+│   ├── useSSE.ts            # Server-Sent Events connection
+│   ├── useSlugValidation.ts # Real-time slug validation
+│   └── use-toast.ts         # Toast hook
+├── lib/
+│   ├── axios.ts             # Axios instance with interceptors
+│   ├── i18n.ts              # Internationalization configuration
+│   └── utils.ts             # General utilities
+├── pages/                   # Page components
+├── schemas/                 # Zod validation schemas
+├── services/                # API service layer
+│   ├── auth.service.ts
+│   ├── companies.service.ts
+│   ├── company-members.service.ts
+│   ├── company-requests.service.ts
+│   ├── clients.service.ts
+│   ├── time-entries.service.ts
+│   ├── projects.service.ts
+│   ├── categories.service.ts
+│   ├── calendar-notes.service.ts
+│   ├── invitations.service.ts
+│   ├── permission-requests.service.ts
+│   ├── permissions.service.ts
+│   └── users.service.ts
+└── types/                   # Shared TypeScript types
 ```
 
-## 👤 Author
+## Backend Integration
+
+Connects to the API at `http://localhost:4000/api`. The Axios client includes interceptors that automatically renew the access token using the refresh token when it expires.
+
+Real-time notifications are received via an SSE connection at `/api/sse`, managed by the `useSSE` hook.
+
+## Author
 
 Leonardo Caero Ledezma
