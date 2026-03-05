@@ -689,13 +689,30 @@ export default function TimeTracker() {
 
   const deleteMutation = useMutation({
     mutationFn: timeEntriesService.delete,
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: ['time-entries'] });
+      const snapshots = queryClient.getQueriesData<any[]>({ queryKey: ['time-entries'] });
+      snapshots.forEach(([key, data]) => {
+        if (Array.isArray(data)) {
+          queryClient.setQueryData(key, data.filter((e: any) => e.id !== id));
+        }
+      });
+      return { snapshots };
+    },
+    onError: (error: any, _id, ctx) => {
+      if (ctx?.snapshots) {
+        ctx.snapshots.forEach(([key, data]: [any, any]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not delete entry' });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
       toast({ title: language === 'es' ? 'Imputacion eliminada' : 'Entry deleted' });
       setDeletingEntry(null);
     },
-    onError: (error: any) => {
-      toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not delete entry' });
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['time-entries'] });
     },
   });
 
