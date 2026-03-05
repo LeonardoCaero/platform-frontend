@@ -98,10 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       const userData = await authService.getMe();
       setUser(userData);
-    } catch (error) {
-      setUser(null);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+    } catch (error: any) {
+      const status = error?.response?.status;
+      // Only clear session on explicit auth failures, not network errors
+      if (status === 401 || status === 403) {
+        setUser(null);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+      // Network error or server down: keep tokens, user stays "logged in"
+      // The axios interceptor will handle refresh on next request
     }
   }, []);
 
