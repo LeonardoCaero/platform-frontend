@@ -73,7 +73,7 @@ export interface TimeEntryCategory {
   updatedAt: string;
 }
 
-// ─── DTOs ────────────────────────────────────────────────────────────────────
+// DTOs
 
 export interface CreateClientDto {
   companyId: string;
