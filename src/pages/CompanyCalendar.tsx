@@ -43,7 +43,7 @@ import type { CalendarNote } from '@/types/calendar.types';
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Loader2, CalendarDays, X, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// ─── colour palette for notes ─────────────────────────────────────────────────
+// Colour palette for notes
 const NOTE_COLORS = [
   '#6366F1', // indigo
   '#8B5CF6', // violet
@@ -57,7 +57,7 @@ const NOTE_COLORS = [
   '#64748B', // slate
 ];
 
-// ─── Zod schema ───────────────────────────────────────────────────────────────
+// Zod schema
 const noteFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   content: z.string().max(5000).optional(),
@@ -66,12 +66,12 @@ const noteFormSchema = z.object({
 });
 type NoteFormValues = z.infer<typeof noteFormSchema>;
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-// ─── NoteCard ─────────────────────────────────────────────────────────────────
+// NoteCard component
 interface NoteCardProps {
   note: CalendarNote;
   canEdit: boolean;
@@ -131,7 +131,7 @@ function NoteCard({ note, canEdit, onEdit, onDelete, cl }: NoteCardProps) {
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// Main page
 export default function CompanyCalendar() {
   const { user, selectedCompany, isAdminOf, isOwnerOf } = useAuth();
   const { t, language } = useLanguage();
@@ -148,7 +148,7 @@ export default function CompanyCalendar() {
   // Any member can create notes (self-assigned) and edit/delete their own
   const canCreate = !!companyId;
 
-  // ─── state ─────────────────────────────────────────────────────────────
+  // State
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [noteFormOpen, setNoteFormOpen] = useState(false);
@@ -157,14 +157,14 @@ export default function CompanyCalendar() {
   const [selectedColor, setSelectedColor] = useState(NOTE_COLORS[0]);
   const [memberSearch, setMemberSearch] = useState('');
 
-  // ─── calendar grid ──────────────────────────────────────────────────────
+  // Calendar grid
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
-  // ─── query: fetch notes for the visible month range ─────────────────────
+  // Query: fetch notes for the visible month range
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['calendar-notes', companyId, format(currentMonth, 'yyyy-MM')],
     queryFn: () => calendarNotesService.list({
@@ -175,7 +175,7 @@ export default function CompanyCalendar() {
     enabled: !!companyId,
   });
 
-  // ─── query: company members ─────────────────────────────────────────────
+  // Query: company members
   const { data: members = [] } = useQuery({
     queryKey: ['company-members', companyId],
     queryFn: () => companyMembersService.getCompanyMembers(companyId!),
@@ -190,13 +190,13 @@ export default function CompanyCalendar() {
     );
   }, [members, memberSearch]);
 
-  // ─── get notes for a specific day ───────────────────────────────────────
+  // Get notes for a specific day
   const notesForDay = (day: Date) =>
     notes.filter(n => isSameDay(new Date(n.date), day));
 
   const selectedDayNotes = selectedDay ? notesForDay(selectedDay) : [];
 
-  // ─── form ────────────────────────────────────────────────────────────────
+  // Form
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
     defaultValues: { title: '', content: '', color: NOTE_COLORS[0], assigneeUserIds: [] },
@@ -227,7 +227,7 @@ export default function CompanyCalendar() {
     setNoteFormOpen(true);
   };
 
-  // ─── mutations ───────────────────────────────────────────────────────────
+  // Mutations
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['calendar-notes', companyId] });
   };
@@ -245,9 +245,9 @@ export default function CompanyCalendar() {
     onSuccess: () => {
       toast({ title: cl.newNote, description: cl.save });
       setNoteFormOpen(false);
-      invalidate();
     },
     onError: () => toast({ title: 'Error', variant: 'destructive' }),
+    onSettled: () => invalidate(),
   });
 
   const updateMutation = useMutation({
@@ -258,22 +258,50 @@ export default function CompanyCalendar() {
         color: selectedColor,
         assigneeUserIds: data.assigneeUserIds,
       }),
+    onMutate: async (data) => {
+      const key = ['calendar-notes', companyId, format(currentMonth, 'yyyy-MM')];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<CalendarNote[]>(key);
+      queryClient.setQueryData<CalendarNote[]>(key, (old) =>
+        old ? old.map(n =>
+          n.id === editingNote?.id
+            ? { ...n, title: data.title, content: data.content || null, color: selectedColor }
+            : n
+        ) : []
+      );
+      return { previous, key };
+    },
+    onError: (_err, _data, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(ctx.key, ctx.previous);
+      toast({ title: 'Error', variant: 'destructive' });
+    },
     onSuccess: () => {
       toast({ title: cl.editNote, description: cl.saveChanges });
       setNoteFormOpen(false);
-      invalidate();
     },
-    onError: () => toast({ title: 'Error', variant: 'destructive' }),
+    onSettled: () => invalidate(),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => calendarNotesService.delete(id),
+    onMutate: async (id) => {
+      const key = ['calendar-notes', companyId, format(currentMonth, 'yyyy-MM')];
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<CalendarNote[]>(key);
+      queryClient.setQueryData<CalendarNote[]>(key, (old) =>
+        old ? old.filter(n => n.id !== id) : []
+      );
+      return { previous, key };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(ctx.key, ctx.previous);
+      toast({ title: 'Error', variant: 'destructive' });
+    },
     onSuccess: () => {
       toast({ title: cl.deleteNote });
       setDeleteTarget(null);
-      invalidate();
     },
-    onError: () => toast({ title: 'Error', variant: 'destructive' }),
+    onSettled: () => invalidate(),
   });
 
   const onSubmit = (data: NoteFormValues) => {
@@ -283,10 +311,10 @@ export default function CompanyCalendar() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
-  // ─── day column headers ───────────────────────────────────────────────────
+  // Day column headers
   const dayHeaders = [cl.mon, cl.tue, cl.wed, cl.thu, cl.fri, cl.sat, cl.sun];
 
-  // ─── render ───────────────────────────────────────────────────────────────
+  // Render
   return (
     <DashboardLayout>
       <div className="flex flex-col h-full">
