@@ -19,6 +19,7 @@ export interface CalendarNote {
   title: string;
   content?: string | null;
   color?: string | null;
+  isPrivate: boolean;
   createdByUserId: string;
   createdBy: CalendarNoteUser;
   assignees: CalendarNoteAssignee[];
@@ -32,6 +33,7 @@ export interface CreateCalendarNoteDto {
   title: string;
   content?: string | null;
   color?: string | null;
+  isPrivate?: boolean;
   assigneeUserIds?: string[];
 }
 
@@ -40,6 +42,7 @@ export interface UpdateCalendarNoteDto {
   title?: string;
   content?: string | null;
   color?: string | null;
+  isPrivate?: boolean;
   assigneeUserIds?: string[];
 }
 

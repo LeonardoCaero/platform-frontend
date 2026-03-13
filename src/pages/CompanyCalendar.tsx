@@ -40,8 +40,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { calendarNotesService } from '@/services/calendar-notes.service';
 import { companyMembersService } from '@/services/company-members.service';
 import type { CalendarNote } from '@/types/calendar.types';
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Loader2, CalendarDays, X, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Loader2, CalendarDays, X, Users, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 // Colour palette for notes
 const NOTE_COLORS = [
@@ -62,6 +63,7 @@ const noteFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   content: z.string().max(5000).optional(),
   color: z.string().optional(),
+  isPrivate: z.boolean().default(false),
   assigneeUserIds: z.array(z.string()).optional().default([]),
 });
 type NoteFormValues = z.infer<typeof noteFormSchema>;
@@ -87,7 +89,10 @@ function NoteCard({ note, canEdit, onEdit, onDelete, cl }: NoteCardProps) {
       style={{ borderLeftColor: note.color ?? '#6366F1', borderLeftWidth: 4 }}
     >
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm leading-snug">{note.title}</p>
+        <div className="flex items-center gap-1.5">
+          {note.isPrivate && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
+          <p className="font-semibold text-sm leading-snug">{note.title}</p>
+        </div>
         {note.content && (
           <p className="text-xs text-muted-foreground mt-1 line-clamp-3 whitespace-pre-line">{note.content}</p>
         )}
@@ -199,14 +204,14 @@ export default function CompanyCalendar() {
   // Form
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { title: '', content: '', color: NOTE_COLORS[0], assigneeUserIds: [] },
+    defaultValues: { title: '', content: '', color: NOTE_COLORS[0], isPrivate: false, assigneeUserIds: [] },
   });
 
   const openCreateForm = (day: Date) => {
     setSelectedDay(day);
     setEditingNote(null);
     // Regular members are auto-assigned to themselves; admins start with empty selection
-    form.reset({ title: '', content: '', color: NOTE_COLORS[0], assigneeUserIds: canManage ? [] : [user!.id] });
+    form.reset({ title: '', content: '', color: NOTE_COLORS[0], isPrivate: false, assigneeUserIds: canManage ? [] : [user!.id] });
     setSelectedColor(NOTE_COLORS[0]);
     setMemberSearch('');
     setNoteFormOpen(true);
@@ -219,6 +224,7 @@ export default function CompanyCalendar() {
       title: note.title,
       content: note.content ?? '',
       color,
+      isPrivate: note.isPrivate,
       // Regular members cannot change assignees — backend will enforce [callerId]
       assigneeUserIds: canManage ? note.assignees.map(a => a.userId) : [user!.id],
     });
@@ -240,7 +246,8 @@ export default function CompanyCalendar() {
         title: data.title,
         content: data.content || null,
         color: selectedColor,
-        assigneeUserIds: data.assigneeUserIds,
+        isPrivate: data.isPrivate,
+        assigneeUserIds: data.isPrivate ? [] : data.assigneeUserIds,
       }),
     onSuccess: () => {
       toast({ title: cl.newNote, description: cl.save });
@@ -256,7 +263,8 @@ export default function CompanyCalendar() {
         title: data.title,
         content: data.content || null,
         color: selectedColor,
-        assigneeUserIds: data.assigneeUserIds,
+        isPrivate: data.isPrivate,
+        assigneeUserIds: data.isPrivate ? [] : data.assigneeUserIds,
       }),
     onMutate: async (data) => {
       const key = ['calendar-notes', companyId, format(currentMonth, 'yyyy-MM')];
@@ -398,9 +406,10 @@ export default function CompanyCalendar() {
                           dayNotes.slice(0, 3).map(n => (
                             <div
                               key={n.id}
-                              className="h-2.5 rounded-full truncate text-[9px] leading-[10px] px-1 hidden sm:flex items-center text-white font-medium"
+                              className="h-2.5 rounded-full truncate text-[9px] leading-[10px] px-1 hidden sm:flex items-center text-white font-medium gap-0.5"
                               style={{ backgroundColor: n.color ?? '#6366F1' }}
                             >
+                              {n.isPrivate && <Lock className="h-2 w-2 shrink-0" />}
                               <span className="truncate">{n.title}</span>
                             </div>
                           ))
@@ -563,8 +572,26 @@ export default function CompanyCalendar() {
               </div>
             </div>
 
+            {/* Private toggle */}
+            <div className="flex items-center justify-between rounded-lg border px-3.5 py-3">
+              <div className="flex items-center gap-2.5">
+                <Lock className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium leading-none">{cl.privateNote}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{cl.privateNoteHint}</p>
+                </div>
+              </div>
+              <Switch
+                checked={form.watch('isPrivate')}
+                onCheckedChange={val => {
+                  form.setValue('isPrivate', val);
+                  if (val) form.setValue('assigneeUserIds', []);
+                }}
+              />
+            </div>
+
             {/* Assignees — only admins/owners can pick assignees; members are auto-assigned */}
-            {canManage && <div className="space-y-1.5">
+            {canManage && !form.watch('isPrivate') && <div className="space-y-1.5">
               <Label>{cl.assignees}</Label>
               <Input
                 placeholder={cl.assigneesPlaceholder}
