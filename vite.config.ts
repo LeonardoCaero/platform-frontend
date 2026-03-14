@@ -15,7 +15,13 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: "autoUpdate",
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,svg,png,woff2}"],
+      },
       includeAssets: ["favicon.ico", "caeroDev_logo.svg", "apple-touch-icon-180x180.png"],
       manifest: {
         name: "Platform",
@@ -48,29 +54,6 @@ export default defineConfig(() => ({
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",
-          },
-        ],
-      },
-      workbox: {
-        // Cache static assets permanently
-        globPatterns: ["**/*.{js,css,html,ico,svg,png,woff2}"],
-        // Runtime caching
-        runtimeCaching: [
-          {
-            // API calls: try network first, fall back to cache
-            urlPattern: /\/api\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "api-cache",
-              networkTimeoutSeconds: 10,
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-            },
           },
         ],
       },
