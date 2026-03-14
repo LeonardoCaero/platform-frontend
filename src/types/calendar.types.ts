@@ -20,6 +20,7 @@ export interface CalendarNote {
   content?: string | null;
   color?: string | null;
   isPrivate: boolean;
+  reminderDaysBefore: number[];
   createdByUserId: string;
   createdBy: CalendarNoteUser;
   assignees: CalendarNoteAssignee[];
@@ -35,6 +36,7 @@ export interface CreateCalendarNoteDto {
   color?: string | null;
   isPrivate?: boolean;
   assigneeUserIds?: string[];
+  reminderDaysBefore?: number[];
 }
 
 export interface UpdateCalendarNoteDto {
@@ -44,6 +46,7 @@ export interface UpdateCalendarNoteDto {
   color?: string | null;
   isPrivate?: boolean;
   assigneeUserIds?: string[];
+  reminderDaysBefore?: number[];
 }
 
 export interface ListCalendarNotesQuery {

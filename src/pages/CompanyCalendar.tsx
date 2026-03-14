@@ -40,7 +40,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { calendarNotesService } from '@/services/calendar-notes.service';
 import { companyMembersService } from '@/services/company-members.service';
 import type { CalendarNote } from '@/types/calendar.types';
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Loader2, CalendarDays, X, Users, Lock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, Loader2, CalendarDays, X, Users, Lock, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 
@@ -65,8 +65,12 @@ const noteFormSchema = z.object({
   color: z.string().optional(),
   isPrivate: z.boolean().default(false),
   assigneeUserIds: z.array(z.string()).optional().default([]),
+  reminderDaysBefore: z.array(z.number().int().min(0)).default([]),
 });
 type NoteFormValues = z.infer<typeof noteFormSchema>;
+
+// Preset reminder options (days before the note date)
+const REMINDER_PRESETS = [0, 1, 2, 3, 5, 7, 14, 30];
 
 // Helpers
 function getInitials(name: string) {
@@ -91,6 +95,7 @@ function NoteCard({ note, canEdit, onEdit, onDelete, cl }: NoteCardProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           {note.isPrivate && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
+          {note.reminderDaysBefore.length > 0 && <Bell className="h-3 w-3 text-muted-foreground shrink-0" />}
           <p className="font-semibold text-sm leading-snug">{note.title}</p>
         </div>
         {note.content && (
@@ -111,6 +116,11 @@ function NoteCard({ note, canEdit, onEdit, onDelete, cl }: NoteCardProps) {
                 </span>
               )}
             </div>
+          ) : note.isPrivate ? (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              <Lock className="h-2.5 w-2.5 mr-0.5" />
+              {cl.privateNote}
+            </Badge>
           ) : (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
               <Users className="h-2.5 w-2.5 mr-0.5" />
@@ -204,14 +214,14 @@ export default function CompanyCalendar() {
   // Form
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
-    defaultValues: { title: '', content: '', color: NOTE_COLORS[0], isPrivate: false, assigneeUserIds: [] },
+    defaultValues: { title: '', content: '', color: NOTE_COLORS[0], isPrivate: false, assigneeUserIds: [], reminderDaysBefore: [] },
   });
 
   const openCreateForm = (day: Date) => {
     setSelectedDay(day);
     setEditingNote(null);
     // Regular members are auto-assigned to themselves; admins start with empty selection
-    form.reset({ title: '', content: '', color: NOTE_COLORS[0], isPrivate: false, assigneeUserIds: canManage ? [] : [user!.id] });
+    form.reset({ title: '', content: '', color: NOTE_COLORS[0], isPrivate: false, assigneeUserIds: canManage ? [] : [user!.id], reminderDaysBefore: [] });
     setSelectedColor(NOTE_COLORS[0]);
     setMemberSearch('');
     setNoteFormOpen(true);
@@ -227,6 +237,7 @@ export default function CompanyCalendar() {
       isPrivate: note.isPrivate,
       // Regular members cannot change assignees — backend will enforce [callerId]
       assigneeUserIds: canManage ? note.assignees.map(a => a.userId) : [user!.id],
+      reminderDaysBefore: note.reminderDaysBefore ?? [],
     });
     setSelectedColor(color);
     setMemberSearch('');
@@ -248,6 +259,7 @@ export default function CompanyCalendar() {
         color: selectedColor,
         isPrivate: data.isPrivate,
         assigneeUserIds: data.isPrivate ? [] : data.assigneeUserIds,
+        reminderDaysBefore: data.reminderDaysBefore,
       }),
     onSuccess: () => {
       toast({ title: cl.newNote, description: cl.save });
@@ -265,6 +277,7 @@ export default function CompanyCalendar() {
         color: selectedColor,
         isPrivate: data.isPrivate,
         assigneeUserIds: data.isPrivate ? [] : data.assigneeUserIds,
+        reminderDaysBefore: data.reminderDaysBefore,
       }),
     onMutate: async (data) => {
       const key = ['calendar-notes', companyId, format(currentMonth, 'yyyy-MM')];
@@ -410,6 +423,7 @@ export default function CompanyCalendar() {
                               style={{ backgroundColor: n.color ?? '#6366F1' }}
                             >
                               {n.isPrivate && <Lock className="h-2 w-2 shrink-0" />}
+                              {n.reminderDaysBefore.length > 0 && <Bell className="h-2 w-2 shrink-0" />}
                               <span className="truncate">{n.title}</span>
                             </div>
                           ))
@@ -588,6 +602,56 @@ export default function CompanyCalendar() {
                   if (val) form.setValue('assigneeUserIds', []);
                 }}
               />
+            </div>
+
+            {/* Reminders */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <Label>{cl.reminder}</Label>
+              </div>
+              <p className="text-xs text-muted-foreground -mt-1">{cl.reminderHint}</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {REMINDER_PRESETS.map(days => {
+                  const selected: number[] = form.watch('reminderDaysBefore') ?? [];
+                  const isOn = selected.includes(days);
+                  const label = days === 0
+                    ? (language === 'es' ? 'Mismo día' : 'Same day')
+                    : days === 1
+                      ? (language === 'es' ? '1 día antes' : '1 day before')
+                      : (language === 'es' ? `${days} días antes` : `${days} days before`);
+                  return (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => {
+                        const current: number[] = form.getValues('reminderDaysBefore') ?? [];
+                        if (isOn) {
+                          form.setValue('reminderDaysBefore', current.filter(d => d !== days));
+                        } else {
+                          form.setValue('reminderDaysBefore', [...current, days].sort((a, b) => a - b));
+                        }
+                      }}
+                      className={cn(
+                        'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                        isOn
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-foreground border-border hover:bg-accent'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {(form.watch('reminderDaysBefore') ?? []).length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {language === 'es'
+                    ? `Recibirás ${(form.watch('reminderDaysBefore') ?? []).length} recordatorio(s) push`
+                    : `You will receive ${(form.watch('reminderDaysBefore') ?? []).length} push reminder(s)`
+                  }
+                </p>
+              )}
             </div>
 
             {/* Assignees — only admins/owners can pick assignees; members are auto-assigned */}

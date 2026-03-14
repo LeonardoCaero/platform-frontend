@@ -33,4 +33,13 @@ export const calendarNotesService = {
   async delete(id: string): Promise<void> {
     await api.delete(`${BASE_URL}/${id}`);
   },
+
+  async getUpcomingReminderCount(): Promise<number> {
+    const response = await api.get<{ success: boolean; data: { count: number } }>(`${BASE_URL}/upcoming-reminders`);
+    return response.data.data.count;
+  },
+
+  async dismissReminders(): Promise<void> {
+    await api.post(`${BASE_URL}/dismiss-reminders`);
+  },
 };

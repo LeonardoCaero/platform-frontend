@@ -2,18 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { invitationsService } from '@/services/invitations.service';
+import { calendarNotesService } from '@/services/calendar-notes.service';
 import { Bell, Building2, Check, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { enUS, es as esLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 export function NotificationBell() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { refreshUser } = useAuth();
+  const { t, language } = useLanguage();
+  const nb = t.notifications;
+  const dateLocale = language === 'es' ? esLocale : enUS;
 
   const { data: invitations = [] } = useQuery({
     queryKey: ['pending-invitations'],
@@ -22,7 +27,21 @@ export function NotificationBell() {
     staleTime: 10_000,
   });
 
-  const count = invitations.length;
+  const { data: reminderCount = 0 } = useQuery({
+    queryKey: ['upcoming-reminder-count'],
+    queryFn: calendarNotesService.getUpcomingReminderCount,
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+  });
+
+  const dismissRemindersMutation = useMutation({
+    mutationFn: calendarNotesService.dismissReminders,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['upcoming-reminder-count'] });
+    },
+  });
+
+  const count = invitations.length + reminderCount;
 
   const acceptMutation = useMutation({
     mutationFn: invitationsService.accept,
@@ -30,7 +49,7 @@ export function NotificationBell() {
       const inv = invitations.find(i => i.id === membershipId);
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ['pending-invitations'] });
-      toast({ title: `Joined ${inv?.company.name ?? 'company'}` });
+      toast({ title: `${language === 'es' ? 'Te has unido a' : 'Joined'} ${inv?.company.name ?? ''}` });
     },
     onError: (error: any) => {
       toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not accept invitation' });
@@ -42,7 +61,7 @@ export function NotificationBell() {
     onSuccess: (_, membershipId) => {
       const inv = invitations.find(i => i.id === membershipId);
       queryClient.invalidateQueries({ queryKey: ['pending-invitations'] });
-      toast({ title: `Declined invitation from ${inv?.company.name ?? 'company'}` });
+      toast({ title: `${language === 'es' ? 'Invitación rechazada de' : 'Declined invitation from'} ${inv?.company.name ?? ''}` });
     },
     onError: (error: any) => {
       toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not decline invitation' });
@@ -64,19 +83,48 @@ export function NotificationBell() {
 
       <PopoverContent align="end" className="w-80 p-0">
         <div className="px-4 py-3 border-b">
-          <h3 className="text-sm font-semibold">Notifications</h3>
+          <h3 className="text-sm font-semibold">{nb.title}</h3>
           {count > 0 && (
-            <p className="text-xs text-muted-foreground mt-0.5">{count} pending invitation{count > 1 ? 's' : ''}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {invitations.length > 0 && nb.pendingInvitation(invitations.length)}
+              {invitations.length > 0 && reminderCount > 0 && ' · '}
+              {reminderCount > 0 && nb.upcomingReminder(reminderCount)}
+            </p>
           )}
         </div>
 
-        {invitations.length === 0 ? (
+        {count === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-muted-foreground gap-2">
             <Bell className="h-8 w-8 opacity-30" />
-            <p className="text-sm">No notifications</p>
+            <p className="text-sm">{nb.noNotifications}</p>
           </div>
         ) : (
           <ul className="divide-y max-h-[360px] overflow-y-auto">
+            {reminderCount > 0 && (
+              <li className="px-4 py-3 flex items-center gap-3 bg-primary/5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bell className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium leading-snug">
+                    {nb.upcomingReminder(reminderCount)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {nb.reminderBody}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs shrink-0 text-muted-foreground hover:text-foreground"
+                  disabled={dismissRemindersMutation.isPending}
+                  onClick={() => dismissRemindersMutation.mutate()}
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  {nb.dismiss}
+                </Button>
+              </li>
+            )}
             {invitations.map(inv => (
               <li key={inv.id} className="p-4 space-y-2">
                 <div className="flex items-start gap-3">
@@ -88,7 +136,7 @@ export function NotificationBell() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium leading-snug">
-                      You've been invited to join{' '}
+                      {nb.invitedToJoin}{' '}
                       <span className="font-semibold">{inv.company.name}</span>
                     </p>
                     {inv.roles.length > 0 && (
@@ -109,7 +157,7 @@ export function NotificationBell() {
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatDistanceToNow(new Date(inv.invitedAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(inv.invitedAt), { addSuffix: true, locale: dateLocale })}
                     </p>
                   </div>
                 </div>
@@ -121,7 +169,7 @@ export function NotificationBell() {
                     onClick={() => acceptMutation.mutate(inv.id)}
                   >
                     <Check className="h-3 w-3 mr-1" />
-                    Accept
+                    {nb.accept}
                   </Button>
                   <Button
                     size="sm"
@@ -131,7 +179,7 @@ export function NotificationBell() {
                     onClick={() => declineMutation.mutate(inv.id)}
                   >
                     <X className="h-3 w-3 mr-1" />
-                    Decline
+                    {nb.decline}
                   </Button>
                 </div>
               </li>
