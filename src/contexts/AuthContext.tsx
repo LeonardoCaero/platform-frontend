@@ -12,7 +12,7 @@ interface AuthContextType {
   selectedCompany: CompanyMembership | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   refreshUser: () => Promise<void>;
   hasGlobalPermission: (permission: string) => boolean;
   hasCompanyPermission: (permission: string, companyId?: string) => boolean;
@@ -144,12 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const logout = async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      // Even if logout API fails, clear local state
-    }
+  const logout = () => {
     setUser(null);
     setSelectedCompanyState(null);
     localStorage.removeItem('accessToken');
@@ -159,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       title: 'Logged out',
       description: 'See you next time!',
     });
+    authService.logout().catch(() => {});
   };
 
   return (

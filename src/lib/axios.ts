@@ -28,7 +28,8 @@ api.interceptors.response.use(
     // Don't try to refresh on login/register/refresh endpoints
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
                            originalRequest.url?.includes('/auth/register') ||
-                           originalRequest.url?.includes('/auth/refresh');
+                           originalRequest.url?.includes('/auth/refresh') ||
+                           originalRequest.url?.includes('/auth/logout');
 
     // If 401 and we haven't tried refreshing yet
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
