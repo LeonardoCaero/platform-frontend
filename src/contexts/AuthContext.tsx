@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, authService, CompanyMembership } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface AuthContextType {
   user: User | null;
@@ -31,6 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [selectedCompany, setSelectedCompanyState] = useState<CompanyMembership | null>(null);
   const [viewAsMember, setViewAsMember] = useState(false);
   const { toast } = useToast();
+
+  usePushNotifications(!!user);
 
   // Load selected company from localStorage
   useEffect(() => {
@@ -100,14 +103,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(userData);
     } catch (error: any) {
       const status = error?.response?.status;
-      // Only clear session on explicit auth failures, not network errors
       if (status === 401 || status === 403) {
         setUser(null);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
       }
-      // Network error or server down: keep tokens, user stays "logged in"
-      // The axios interceptor will handle refresh on next request
     }
   }, []);
 
