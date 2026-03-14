@@ -17,7 +17,8 @@ export function usePushNotifications(isAuthenticated: boolean) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     attempted.current = true;
-    registerPush().catch(() => {
+    registerPush().catch((err) => {
+      console.error('[Push] Registration failed:', err);
     });
   }, [isAuthenticated]);
 }
