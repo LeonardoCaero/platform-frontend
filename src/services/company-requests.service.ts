@@ -55,7 +55,7 @@ export const companyRequestsService = {
    * Admin: Get all company requests (paginated)
    */
   async adminGetAllRequests(params: CompanyRequestsListParams = {}): Promise<PaginatedCompanyRequestsResponse> {
-    const { data } = await api.get<PaginatedCompanyRequestsResponse>(`${BASE_URL}/admin/company-requests`, { params });
+    const { data } = await api.get<PaginatedCompanyRequestsResponse>(`${BASE_URL}/admin`, { params });
     return data;
   },
 
@@ -64,7 +64,7 @@ export const companyRequestsService = {
    */
   async adminReviewRequest(id: string, reviewData: ReviewCompanyRequestDto): Promise<CompanyRequest> {
     const { data } = await api.post<ApiResponse<CompanyRequest>>(
-      `${BASE_URL}/admin/company-requests/${id}/review`,
+      `${BASE_URL}/admin/${id}/review`,
       reviewData
     );
     return data.data;
