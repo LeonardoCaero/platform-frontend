@@ -494,6 +494,13 @@ const translations = {
       toastError: 'Error',
       toastErrorDesc: 'Failed to process request',
     },
+    sse: {
+      timeEntryCreated: '⏱ {{name}} logged {{hours}}{{project}}',
+      timeEntryUpdated: '✏️ {{name}} edited an entry {{hours}}{{project}}',
+      timeEntryBulkTitle: '{{count}} time updates',
+      invitationTitle: '📬 New invitation from {{company}}',
+      invitationDesc: 'Open the notification bell to accept or decline.',
+    },
   },
   es: {
     nav: {
@@ -987,6 +994,13 @@ const translations = {
       toastRejectedDesc: 'Solicitud de empresa rechazada correctamente',
       toastError: 'Error',
       toastErrorDesc: 'Error al procesar la solicitud',
+    },
+    sse: {
+      timeEntryCreated: '⏱ {{name}} ha imputado {{hours}}{{project}}',
+      timeEntryUpdated: '✏️ {{name}} ha editado un apunte {{hours}}{{project}}',
+      timeEntryBulkTitle: '{{count}} actualizaciones de tiempo',
+      invitationTitle: '📬 Nueva invitación de {{company}}',
+      invitationDesc: 'Abre el icono de notificaciones para aceptar o rechazar.',
     },
   },
 } as const;
