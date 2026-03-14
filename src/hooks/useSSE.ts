@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
-const SSE_URL = `${import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api'}/sse`;
+const SSE_URL = `${import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api'}/sse`;
 
 /**
  * Establishes a Server-Sent Events connection so the UI updates
