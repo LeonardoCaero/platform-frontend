@@ -1,3 +1,5 @@
+import { useRef, useEffect } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -38,6 +40,21 @@ const queryClient = new QueryClient();
 function AppRealtimeLayer({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   useSSE(isAuthenticated);
+
+  const updateRef = useRef<((reloadPage?: boolean) => Promise<void>) | undefined>(undefined);
+  const { updateServiceWorker } = useRegisterSW({
+    onRegisteredSW(_, registration) {
+      // Poll every 60 min — installed PWAs don't do navigation-based SW checks
+      setInterval(() => registration?.update(), 60 * 60 * 1000);
+    },
+    onNeedRefresh() {
+      updateRef.current?.(true);
+    },
+  });
+  useEffect(() => {
+    updateRef.current = updateServiceWorker;
+  }, [updateServiceWorker]);
+
   return <>{children}</>;
 }
 
