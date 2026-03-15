@@ -11,12 +11,7 @@ export enum PermissionRequestStatus {
   CANCELLED = 'CANCELLED',
 }
 
-export interface Permission {
-  id: string;
-  key: string;
-  description?: string | null;
-  scope: 'GLOBAL' | 'COMPANY';
-}
+export type { Permission } from './permission.types';
 
 export interface PermissionRequest {
   id: string;

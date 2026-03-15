@@ -49,10 +49,10 @@ export function NotificationBell() {
       const inv = invitations.find(i => i.id === membershipId);
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ['pending-invitations'] });
-      toast({ title: `${language === 'es' ? 'Te has unido a' : 'Joined'} ${inv?.company.name ?? ''}` });
+      toast({ title: nb.joinedCompany(inv?.company.name ?? '') });
     },
     onError: (error: any) => {
-      toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not accept invitation' });
+      toast({ variant: 'destructive', title: 'Error', description: nb.errorAccept });
     },
   });
 
@@ -61,10 +61,10 @@ export function NotificationBell() {
     onSuccess: (_, membershipId) => {
       const inv = invitations.find(i => i.id === membershipId);
       queryClient.invalidateQueries({ queryKey: ['pending-invitations'] });
-      toast({ title: `${language === 'es' ? 'Invitación rechazada de' : 'Declined invitation from'} ${inv?.company.name ?? ''}` });
+      toast({ title: nb.declinedFrom(inv?.company.name ?? '') });
     },
     onError: (error: any) => {
-      toast({ variant: 'destructive', title: 'Error', description: error.response?.data?.message || 'Could not decline invitation' });
+      toast({ variant: 'destructive', title: 'Error', description: nb.errorDecline });
     },
   });
 

@@ -54,6 +54,7 @@ export interface CompanyMember {
   user: {
     id: string;
     email: string;
+    fullName?: string;
     firstName?: string;
     lastName?: string;
     avatarUrl?: string;

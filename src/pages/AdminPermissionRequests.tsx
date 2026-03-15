@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -40,8 +39,7 @@ import { format } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AdminPermissionRequests() {
-  const { isPlatformAdmin, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { isPlatformAdmin } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
   const ta = t.adminRequests;
@@ -52,19 +50,6 @@ export default function AdminPermissionRequests() {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
   const [reviewNotes, setReviewNotes] = useState('');
-
-  // Redirect if not admin
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isPlatformAdmin) {
-      toast({
-        title: ta.accessDenied,
-        description: ta.accessDeniedDesc,
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-    }
-  }, [isPlatformAdmin, navigate, toast, authLoading]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-permission-requests', statusFilter],
@@ -137,20 +122,6 @@ export default function AdminPermissionRequests() {
         return status;
     }
   };
-
-  if (!isPlatformAdmin) {
-    return null;
-  }
-
-  if (authLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>

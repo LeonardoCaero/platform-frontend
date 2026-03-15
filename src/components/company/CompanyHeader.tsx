@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Company } from '@/types/company.types';
 import { Building2, Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompanyHeaderProps {
   company: Company;
@@ -14,6 +15,8 @@ interface CompanyHeaderProps {
 }
 
 export function CompanyHeader({ company, canManage = false, onEdit, onDelete, onRestore }: CompanyHeaderProps) {
+  const { t } = useLanguage();
+  const th = t.companyCard;
   return (
     <Card>
       <CardContent className="pt-6">
@@ -38,17 +41,17 @@ export function CompanyHeader({ company, canManage = false, onEdit, onDelete, on
               company.deletedAt ? (
                 <Button onClick={onRestore}>
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Restore
+                  {th.restore}
                 </Button>
               ) : (
                 <>
                   <Button variant="outline" onClick={onEdit}>
                     <Pencil className="h-4 w-4 mr-2" />
-                    Edit
+                    {th.edit}
                   </Button>
                   <Button variant="destructive" onClick={onDelete}>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
+                    {th.delete}
                   </Button>
                 </>
               )

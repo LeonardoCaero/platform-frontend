@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { companiesService } from '@/services/companies.service';
 import { Company } from '@/types/company.types';
 import { Building2, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -26,6 +27,9 @@ export default function Companies() {
   const navigate = useNavigate();
   const { isPlatformAdmin, isOwnerOf } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const tc = t.companies;
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
     status: 'ALL',
@@ -36,7 +40,7 @@ export default function Companies() {
   const [companyToRestore, setCompanyToRestore] = useState<Company | null>(null);
   const limit = 12;
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['companies', page, filters],
     queryFn: () =>
       companiesService.getCompanies({
@@ -66,11 +70,11 @@ export default function Companies() {
 
     try {
       await companiesService.deleteCompany(companyToDelete.id);
-      toast({ title: `${companyToDelete.name} has been deleted` });
+      toast({ title: tc.deletedSuccess.replace('{{name}}', companyToDelete.name) });
       setCompanyToDelete(null);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
     } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to delete company' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || tc.deleteError });
     }
   };
 
@@ -78,11 +82,11 @@ export default function Companies() {
     if (!companyToRestore) return;
     try {
       await companiesService.restoreCompany(companyToRestore.id);
-      toast({ title: `${companyToRestore.name} has been restored` });
+      toast({ title: tc.restoredSuccess.replace('{{name}}', companyToRestore.name) });
       setCompanyToRestore(null);
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
     } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || 'Failed to restore company' });
+      toast({ variant: 'destructive', title: error.response?.data?.message || tc.restoreError });
     }
   };
 
@@ -95,15 +99,15 @@ export default function Companies() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Building2 className="h-8 w-8" />
-              <h1 className="text-3xl font-bold">Companies</h1>
+              <h1 className="text-3xl font-bold">{tc.title}</h1>
             </div>
             <p className="text-muted-foreground">
-              Manage your companies and their members
+              {tc.adminSubtitle}
             </p>
           </div>
           <Button onClick={() => navigate('/companies/new')}>
             <Plus className="h-4 w-4 mr-2" />
-            Create Company
+            {tc.createBtn}
           </Button>
         </div>
 
@@ -118,16 +122,16 @@ export default function Companies() {
         ) : !data?.data.length ? (
           <div className="flex flex-col items-center justify-center py-16 space-y-4">
             <Building2 className="h-16 w-16 text-muted-foreground" />
-            <h3 className="text-xl font-semibold">No companies found</h3>
+            <h3 className="text-xl font-semibold">{tc.noFound}</h3>
             <p className="text-muted-foreground text-center">
               {filters.search || filters.status !== 'ALL'
-                ? 'Try adjusting your filters'
-                : 'Get started by creating your first company'}
+                ? tc.adjustFilters
+                : tc.createFirst}
             </p>
             {!filters.search && filters.status === 'ALL' && (
               <Button onClick={() => navigate('/companies/new')}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Company
+                {tc.createBtn}
               </Button>
             )}
           </div>
@@ -153,8 +157,8 @@ export default function Companies() {
             {pagination && pagination.totalPages > 1 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-8">
                 <p className="text-sm text-muted-foreground">
-                  Showing {(page - 1) * limit + 1} to{' '}
-                  {Math.min(page * limit, pagination.total)} of {pagination.total} companies
+                  {tc.showing} {(page - 1) * limit + 1} {tc.to}{' '}
+                  {Math.min(page * limit, pagination.total)} {tc.of} {pagination.total} {tc.companiesLabel}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
@@ -164,7 +168,7 @@ export default function Companies() {
                     disabled={page === 1}
                   >
                     <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    {tc.previous}
                   </Button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
@@ -194,7 +198,7 @@ export default function Companies() {
                     onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                     disabled={page === pagination.totalPages}
                   >
-                    Next
+                    {tc.next}
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -207,18 +211,18 @@ export default function Companies() {
       <AlertDialog open={!!companyToDelete} onOpenChange={() => setCompanyToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Company</AlertDialogTitle>
+            <AlertDialogTitle>{tc.deleteTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{companyToDelete?.name}</strong>?
+              {tc.deleteDesc} <strong>{companyToDelete?.name}</strong>?
               <br /><br />
-              This will soft delete the company. It can be restored later. The company has{' '}
-              {companyToDelete?._count?.memberships || 0} member(s).
+              {tc.softDeleteNote}{' '}
+              {companyToDelete?._count?.memberships || 0} {tc.memberUnit}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tc.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {tc.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -227,15 +231,15 @@ export default function Companies() {
       <AlertDialog open={!!companyToRestore} onOpenChange={() => setCompanyToRestore(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore Company</AlertDialogTitle>
+            <AlertDialogTitle>{tc.restoreTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to restore <strong>{companyToRestore?.name}</strong>?
+              {tc.restoreDesc} <strong>{companyToRestore?.name}</strong>?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{tc.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRestoreConfirm}>
-              Restore
+              {tc.restore}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

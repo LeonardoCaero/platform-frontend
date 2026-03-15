@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SettingsTabProps {
   canDelete: boolean;
@@ -9,12 +10,14 @@ interface SettingsTabProps {
 }
 
 export function SettingsTab({ canDelete, canLeave, onDelete, onLeave }: SettingsTabProps) {
+  const { t } = useLanguage();
+  const ts = t.settingsTab;
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Danger Zone</CardTitle>
+        <CardTitle>{ts.dangerZone}</CardTitle>
         <CardDescription>
-          Irreversible actions that affect your membership or this company
+          {ts.irreversibleDesc}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -23,13 +26,13 @@ export function SettingsTab({ canDelete, canLeave, onDelete, onLeave }: Settings
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                  <h4 className="font-semibold text-orange-600 dark:text-orange-400">Leave Company</h4>
+                  <h4 className="font-semibold text-orange-600 dark:text-orange-400">{ts.leaveTitle}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Remove yourself from this company. You will lose access immediately.
+                    {ts.leaveDesc}
                   </p>
                 </div>
                 <Button variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950" onClick={onLeave}>
-                  Leave
+                  {ts.leave}
                 </Button>
               </div>
             </CardContent>
@@ -40,13 +43,13 @@ export function SettingsTab({ canDelete, canLeave, onDelete, onLeave }: Settings
             <CardContent className="pt-6">
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                  <h4 className="font-semibold text-destructive">Delete Company</h4>
+                  <h4 className="font-semibold text-destructive">{ts.deleteTitle}</h4>
                   <p className="text-sm text-muted-foreground">
-                    Soft delete this company. It can be restored later.
+                    {ts.deleteDesc}
                   </p>
                 </div>
                 <Button variant="destructive" onClick={onDelete}>
-                  Delete
+                  {ts.delete}
                 </Button>
               </div>
             </CardContent>

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, authService, CompanyMembership } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 interface AuthContextType {
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [selectedCompany, setSelectedCompanyState] = useState<CompanyMembership | null>(null);
   const [viewAsMember, setViewAsMember] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   usePushNotifications(!!user);
 
@@ -129,8 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshUser();
     
     toast({
-      title: 'Welcome back!',
-      description: `Logged in as ${response.user.email}`,
+      title: t.auth.loginSuccess,
+      description: t.auth.loginSuccessDesc(response.user.email),
     });
   };
 
@@ -140,8 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('refreshToken', response.refreshToken);
     setUser(response.user);
     toast({
-      title: 'Account created!',
-      description: 'Welcome to the platform.',
+      title: t.auth.registerSuccess,
+      description: t.auth.registerSuccessDesc,
     });
   };
 
@@ -152,8 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('selectedCompanySlug');
     toast({
-      title: 'Logged out',
-      description: 'See you next time!',
+      title: t.auth.loggedOut,
+      description: t.auth.loggedOutDesc,
     });
     authService.logout().catch(() => {});
   };

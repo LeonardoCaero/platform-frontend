@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import type { UseFormHandleSubmit, UseFormRegister, FieldErrors, Control, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -25,6 +26,7 @@ import {
   getDay,
 } from 'date-fns';
 import { enUS, es } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +54,9 @@ import { projectsService } from '@/services/projects.service';
 import { clientsService } from '@/services/clients.service';
 import { categoriesService } from '@/services/categories.service';
 import { companyMembersService } from '@/services/company-members.service';
-import type { TimeEntry } from '@/types/time-tracker.types';
+import type { CompanyMember } from '@/types/company.types';
+import type { Client, TimeEntryCategory } from '@/types/clients.types';
+import type { TimeEntry, Project, UpdateTimeEntryDto } from '@/types/time-tracker.types';
 import { ChevronDown, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Clock, Plus, CalendarIcon, Users, AlertCircle, Pin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -95,15 +99,15 @@ function EntryCard({ entry, compact = false, currentUserId, canManageAll, tt, on
               {entry.project.name}
             </Badge>
           )}
-          {(entry as any).isOvertime && (
+          {entry.isOvertime && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-orange-500 text-orange-600 dark:text-orange-400">
               <AlertCircle className="h-2.5 w-2.5 mr-0.5" />{tt.overtime}
             </Badge>
           )}
-          {(entry as any).category && (
+          {entry.category && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
-              <span className="h-2 w-2 rounded-full mr-1 inline-block" style={{ backgroundColor: (entry as any).category.color ?? '#888' }} />
-              {(entry as any).category.name}
+              <span className="h-2 w-2 rounded-full mr-1 inline-block" style={{ backgroundColor: entry.category.color ?? '#888' }} />
+              {entry.category.name}
             </Badge>
           )}
           {canManageAll && isOwnEntry && (
@@ -116,14 +120,14 @@ function EntryCard({ entry, compact = false, currentUserId, canManageAll, tt, on
         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span className="font-semibold text-foreground text-sm">{durationLabel}</span>
           {entry.startTime && entry.endTime && <span className="tabular-nums">{entry.startTime} – {entry.endTime}</span>}
-          {(entry as any).client && (
-            <span className="text-muted-foreground">{(entry as any).client.name}{(entry as any).clientSite ? ` · ${(entry as any).clientSite.name}` : ''}</span>
+          {entry.client && (
+            <span className="text-muted-foreground">{entry.client.name}{entry.clientSite ? ` · ${entry.clientSite.name}` : ''}</span>
           )}
           {canManageAll && entry.user && !isOwnEntry && (
             <span className="text-muted-foreground">{entry.user.fullName}</span>
           )}
-          {(entry as any).loggedByUser && (entry as any).loggedByUser.id !== entry.userId && (
-            <span className="text-muted-foreground/70 flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{tt.loggedBy} {(entry as any).loggedByUser.fullName}</span>
+          {entry.loggedByUser && entry.loggedByUser.id !== entry.userId && (
+            <span className="text-muted-foreground/70 flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{tt.loggedBy} {entry.loggedByUser.fullName}</span>
           )}
         </div>
       </div>
@@ -153,29 +157,44 @@ function EntryCard({ entry, compact = false, currentUserId, canManageAll, tt, on
   );
 }
 
+interface TimeEntryFormData {
+  projectId?: string | null;
+  date: Date;
+  hours: number;
+  minutes: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  title: string;
+  description?: string | null;
+  isOvertime: boolean;
+  clientId?: string | null;
+  clientSiteId?: string | null;
+  categoryId?: string | null;
+}
+
 interface EntryFormProps {
   inDialog?: boolean;
-  handleSubmit: any;
-  onSubmit: (data: any) => void;
+  handleSubmit: UseFormHandleSubmit<TimeEntryFormData>;
+  onSubmit: (data: TimeEntryFormData) => void;
   canManageAll: boolean;
   targetUserId: string | null;
   setTargetUserId: (v: string | null) => void;
-  members: any[];
-  currentUser: any;
-  register: any;
-  errors: any;
-  control: any;
-  setValue: any;
-  watch: any;
-  projects: any[];
-  companyClients: any[];
-  companyCategories: any[];
+  members: CompanyMember[];
+  currentUser: { id: string; fullName?: string } | null;
+  register: UseFormRegister<TimeEntryFormData>;
+  errors: FieldErrors<TimeEntryFormData>;
+  control: Control<TimeEntryFormData>;
+  setValue: UseFormSetValue<TimeEntryFormData>;
+  watch: UseFormWatch<TimeEntryFormData>;
+  projects: Project[];
+  companyClients: Client[];
+  companyCategories: TimeEntryCategory[];
   showAdvanced: boolean;
   setShowAdvanced: (v: boolean) => void;
   datePickerOpen: boolean;
   setDatePickerOpen: (v: boolean | ((p: boolean) => boolean)) => void;
-  locale: any;
-  tt: Record<string, any>;
+  locale: Locale;
+  tt: Record<string, string | ((...args: unknown[]) => string)>;
   applyAutoOvertime: (clientId: string | null | undefined, date: Date | undefined | null) => void;
   editingEntry: TimeEntry | null;
   cancelEdit: () => void;
@@ -229,7 +248,7 @@ function EntryForm({
             <SelectContent>
               <SelectItem value="_self">{tt.myself}</SelectItem>
               {members.filter(m => m.user?.id !== currentUser?.id).map((m) => {
-                const displayName = (m.user as any).fullName || [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.email;
+                const displayName = m.user?.fullName || [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.email;
                 return <SelectItem key={m.user?.id} value={m.user?.id ?? ''}>{displayName}</SelectItem>;
               })}
             </SelectContent>
@@ -386,7 +405,7 @@ function EntryForm({
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">{tt.client}</Label>
               {watchedClientId && (() => {
-                const c = (companyClients as any[]).find(x => x.id === watchedClientId);
+                const c = companyClients.find(x => x.id === watchedClientId);
                 if (!c?.isDefault) return null;
                 return <span className="flex items-center gap-1 text-xs text-primary"><Pin className="h-3 w-3 fill-current" /><span>Predeterminado</span></span>;
               })()}
@@ -420,7 +439,7 @@ function EntryForm({
                   <Label className="text-sm font-medium">{tt.clientSite}</Label>
                   {(() => {
                     const siteId = watch('clientSiteId');
-                    const site = (activeSites as any[]).find(s => s.id === siteId);
+                    const site = activeSites.find(s => s.id === siteId);
                     if (!site?.isDefault) return null;
                     return <span className="flex items-center gap-1 text-xs text-primary"><Pin className="h-3 w-3 fill-current" /><span>Predeterminada</span></span>;
                   })()}
@@ -458,7 +477,7 @@ function EntryForm({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">{tt.noCategory}</SelectItem>
-                    {companyCategories.map((c: any) => (
+                    {companyCategories.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         <span className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color ?? '#888' }} />
@@ -545,8 +564,6 @@ export default function TimeTracker() {
     categoryId: z.string().optional().nullable(),
   }).refine(d => d.hours > 0 || d.minutes > 0, { message: tt.validHours, path: ['hours'] });
 
-  type TimeEntryFormData = z.infer<typeof timeEntrySchema>;
-
   const [view, setView] = useState<ViewType>('daily');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -632,17 +649,17 @@ export default function TimeTracker() {
   useEffect(() => {
     if (editingEntry) { defaultsAppliedRef.current = false; return; }
     if (defaultsAppliedRef.current || !companyClients.length) return;
-    const defaultClient = (companyClients as any[]).find(c => c.isDefault && c.isActive);
+    const defaultClient = companyClients.find(c => c.isDefault && c.isActive);
     if (!defaultClient) return;
     setValue('clientId', defaultClient.id);
-    const defaultSite = defaultClient.sites?.find((s: any) => s.isDefault && s.isActive);
+    const defaultSite = defaultClient.sites?.find(s => s.isDefault && s.isActive);
     if (defaultSite) setValue('clientSiteId', defaultSite.id);
     const d = watch('date');
     if (d) {
       const day = getDay(d);
       if (day === 0 || day === 6) {
-        const hasWeekend = defaultClient.rateRules?.some((r: any) => r.isActive && r.overtimeTriggers?.includes('WEEKEND'));
-        if (hasWeekend) { setValue('isOvertime', true); setShowAdvanced(true); }
+        const hasWeekend = defaultClient.rateRules?.some((r) => r.isActive && r.overtimeTriggers?.includes('WEEKEND'));
+        if (hasWeekend) { setValue('isOvertime', true); }
       }
     }
     defaultsAppliedRef.current = true;
@@ -671,7 +688,7 @@ export default function TimeTracker() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => timeEntriesService.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateTimeEntryDto }) => timeEntriesService.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
       toast({ title: language === 'es' ? 'Imputacion actualizada' : 'Entry updated' });
@@ -745,11 +762,11 @@ export default function TimeTracker() {
       setValue('endTime', editingEntry.endTime ?? null);
       setValue('title', editingEntry.title);
       setValue('description', editingEntry.description ?? '');
-      setValue('isOvertime', (editingEntry as any).isOvertime ?? false);
-      setValue('clientId', (editingEntry as any).clientId ?? null);
-      setValue('clientSiteId', (editingEntry as any).clientSiteId ?? null);
-      setValue('categoryId', (editingEntry as any).categoryId ?? null);
-      setShowAdvanced(!!(editingEntry.projectId || editingEntry.startTime || (editingEntry as any).clientId || (editingEntry as any).categoryId || (editingEntry as any).isOvertime));
+      setValue('isOvertime', editingEntry.isOvertime ?? false);
+      setValue('clientId', editingEntry.clientId ?? null);
+      setValue('clientSiteId', editingEntry.clientSiteId ?? null);
+      setValue('categoryId', editingEntry.categoryId ?? null);
+      setShowAdvanced(!!(editingEntry.projectId || editingEntry.startTime || editingEntry.clientId || editingEntry.categoryId || editingEntry.isOvertime));
     }
   }, [editingEntry, setValue]);
 
@@ -775,14 +792,13 @@ export default function TimeTracker() {
     if (!clientId || !date) return;
     const day = getDay(date); // 0=Sun, 6=Sat
     if (day !== 0 && day !== 6) return;
-    const selectedClient = (companyClients as any[]).find((c) => c.id === clientId);
+    const selectedClient = companyClients.find((c) => c.id === clientId);
     if (!selectedClient) return;
     const hasWeekendTrigger = selectedClient.rateRules?.some(
-      (r: any) => r.isActive && r.overtimeTriggers?.includes('WEEKEND')
+      (r) => r.isActive && r.overtimeTriggers?.includes('WEEKEND')
     );
     if (hasWeekendTrigger) {
       setValue('isOvertime', true);
-      setShowAdvanced(true);
     }
   };
 

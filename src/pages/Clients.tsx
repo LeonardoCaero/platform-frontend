@@ -70,19 +70,19 @@ export default function Clients() {
 
   const createClientMutation = useMutation({
     mutationFn: (data: ClientFormData) => clientsService.create({ companyId, ...data } as any),
-    onSuccess: () => { invalidate(); setClientDialog({ open: false }); toast({ title: language === 'es' ? 'Cliente creado' : 'Client created' }); },
+    onSuccess: () => { invalidate(); setClientDialog({ open: false }); toast({ title: tc.created }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const updateClientMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ClientFormData }) => clientsService.update(id, data),
-    onSuccess: () => { invalidate(); setClientDialog({ open: false }); toast({ title: language === 'es' ? 'Cliente actualizado' : 'Client updated' }); },
+    onSuccess: () => { invalidate(); setClientDialog({ open: false }); toast({ title: tc.updated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const deleteClientMutation = useMutation({
     mutationFn: (id: string) => clientsService.delete(id),
-    onSuccess: () => { invalidate(); setDeleteClientConfirm(null); toast({ title: language === 'es' ? 'Cliente eliminado' : 'Client deleted' }); },
+    onSuccess: () => { invalidate(); setDeleteClientConfirm(null); toast({ title: tc.deleted }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
@@ -100,59 +100,59 @@ export default function Clients() {
 
   const createSiteMutation = useMutation({
     mutationFn: ({ clientId, data }: { clientId: string; data: SiteFormData }) => clientsService.createSite(clientId, data as any),
-    onSuccess: () => { invalidate(); setSiteDialog({ open: false }); toast({ title: language === 'es' ? 'Sede creada' : 'Site created' }); },
+    onSuccess: () => { invalidate(); setSiteDialog({ open: false }); toast({ title: tc.siteCreated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const updateSiteMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: SiteFormData }) => clientsService.updateSite(id, data),
-    onSuccess: () => { invalidate(); setSiteDialog({ open: false }); toast({ title: language === 'es' ? 'Sede actualizada' : 'Site updated' }); },
+    onSuccess: () => { invalidate(); setSiteDialog({ open: false }); toast({ title: tc.siteUpdated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const deleteSiteMutation = useMutation({
     mutationFn: (id: string) => clientsService.deleteSite(id),
-    onSuccess: () => { invalidate(); setDeleteSiteConfirm(null); toast({ title: language === 'es' ? 'Sede eliminada' : 'Site deleted' }); },
+    onSuccess: () => { invalidate(); setDeleteSiteConfirm(null); toast({ title: tc.siteDeleted }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const createRateMutation = useMutation({
     mutationFn: ({ clientId, data }: { clientId: string; data: RateFormData }) =>
       clientsService.createRateRule(clientId, { ...data, baseRatePerHour: data.baseRatePerHour ?? null, overtimeRatePerHour: Number(data.overtimeRatePerHour) } as any),
-    onSuccess: () => { invalidate(); setRateDialog({ open: false }); toast({ title: language === 'es' ? 'Tarifa creada' : 'Rate created' }); },
+    onSuccess: () => { invalidate(); setRateDialog({ open: false }); toast({ title: tc.rateCreated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const updateRateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: RateFormData }) =>
       clientsService.updateRateRule(id, { ...data, baseRatePerHour: data.baseRatePerHour ?? null, overtimeRatePerHour: Number(data.overtimeRatePerHour) }),
-    onSuccess: () => { invalidate(); setRateDialog({ open: false }); toast({ title: language === 'es' ? 'Tarifa actualizada' : 'Rate updated' }); },
+    onSuccess: () => { invalidate(); setRateDialog({ open: false }); toast({ title: tc.rateUpdated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const deleteRateMutation = useMutation({
     mutationFn: (id: string) => clientsService.deleteRateRule(id),
-    onSuccess: () => { invalidate(); setDeleteRateConfirm(null); toast({ title: language === 'es' ? 'Tarifa eliminada' : 'Rate deleted' }); },
+    onSuccess: () => { invalidate(); setDeleteRateConfirm(null); toast({ title: tc.rateDeleted }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const createResourceMutation = useMutation({
     mutationFn: ({ ruleId, data }: { ruleId: string; data: ResourceFormData }) =>
       clientsService.createResource(ruleId, { ...data, baseRatePerHour: Number(data.baseRatePerHour) } as any),
-    onSuccess: () => { invalidate(); setResourceDialog({ open: false }); toast({ title: language === 'es' ? 'Recurso creado' : 'Resource created' }); },
+    onSuccess: () => { invalidate(); setResourceDialog({ open: false }); toast({ title: tc.resourceCreated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const updateResourceMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ResourceFormData }) =>
       clientsService.updateResource(id, { ...data, baseRatePerHour: Number(data.baseRatePerHour) }),
-    onSuccess: () => { invalidate(); setResourceDialog({ open: false }); toast({ title: language === 'es' ? 'Recurso actualizado' : 'Resource updated' }); },
+    onSuccess: () => { invalidate(); setResourceDialog({ open: false }); toast({ title: tc.resourceUpdated }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
   const deleteResourceMutation = useMutation({
     mutationFn: (id: string) => clientsService.deleteResource(id),
-    onSuccess: () => { invalidate(); setDeleteResourceConfirm(null); toast({ title: language === 'es' ? 'Recurso eliminado' : 'Resource deleted' }); },
+    onSuccess: () => { invalidate(); setDeleteResourceConfirm(null); toast({ title: tc.resourceDeleted }); },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Error', description: e.response?.data?.message }),
   });
 
@@ -298,16 +298,16 @@ export default function Clients() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <CardTitle className="text-base">{client.name}</CardTitle>
-                              {client.isDefault && <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{language === 'es' ? 'Predeterminado' : 'Default'}</Badge>}
+                              {client.isDefault && <Badge className="text-[10px] bg-primary/10 text-primary border-primary/20">{tc.defaultLabel}</Badge>}
                               {!client.isActive && <Badge variant="secondary" className="text-[10px]">{tc.inactive}</Badge>}
                               {client.taxId && <span className="text-xs text-muted-foreground">{client.taxId}</span>}
                             </div>
                             <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                               {client.sites.length > 0 && (
-                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{client.sites.length} {language === 'es' ? 'sedes' : 'sites'}</span>
+                                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{client.sites.length} {tc.sitesLabel}</span>
                               )}
                               {client.rateRules.length > 0 && (
-                                <span className="flex items-center gap-1"><Euro className="h-3 w-3" />{client.rateRules.length} {language === 'es' ? 'tarifas' : 'rates'}</span>
+                                <span className="flex items-center gap-1"><Euro className="h-3 w-3" />{client.rateRules.length} {tc.ratesLabel}</span>
                               )}
                               {client._count && client._count.timeEntries > 0 && (
                                 <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{client._count.timeEntries} {tc.totalEntries}</span>
@@ -317,7 +317,7 @@ export default function Clients() {
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {canManage && (<>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" title={client.isDefault ? (language === 'es' ? 'Quitar predeterminado' : 'Remove default') : (language === 'es' ? 'Establecer predeterminado' : 'Set as default')} onClick={e => { e.stopPropagation(); pinClientMutation.mutate({ id: client.id, isDefault: !client.isDefault }); }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title={client.isDefault ? tc.removeDefault : tc.setAsDefault} onClick={e => { e.stopPropagation(); pinClientMutation.mutate({ id: client.id, isDefault: !client.isDefault }); }}>
                               <Pin className={cn('h-3.5 w-3.5', client.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openClientDialog(client); }}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -345,7 +345,7 @@ export default function Clients() {
                             </div>
                           )}
                           {client.sites.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">{language === 'es' ? 'Sin sedes todavía' : 'No sites yet'}</p>
+                            <p className="text-sm text-muted-foreground text-center py-4">{tc.noSites}</p>
                           ) : (
                             <div className="space-y-1.5">
                               {client.sites.map(site => (
@@ -354,14 +354,14 @@ export default function Clients() {
                                     <div className="flex items-center gap-2">
                                       <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                       <span className="text-sm font-medium">{site.name}</span>
-                                      {site.isDefault && <Badge className="text-[10px] py-0 bg-primary/10 text-primary border-primary/20">{language === 'es' ? 'Predeterminada' : 'Default'}</Badge>}
+                                      {site.isDefault && <Badge className="text-[10px] py-0 bg-primary/10 text-primary border-primary/20">{tc.defaultLabel}</Badge>}
                                       {!site.isActive && <Badge variant="secondary" className="text-[10px] py-0">{tc.inactive}</Badge>}
                                     </div>
                                     {site.city && <p className="text-xs text-muted-foreground ml-5">{site.city}</p>}
                                   </div>
                                   {canManage && (
                                     <div className="flex gap-1">
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" title={site.isDefault ? (language === 'es' ? 'Quitar predeterminada' : 'Remove default') : (language === 'es' ? 'Establecer predeterminada' : 'Set as default')} onClick={() => pinSiteMutation.mutate({ id: site.id, isDefault: !site.isDefault })}>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" title={site.isDefault ? tc.removeDefault : tc.setAsDefault} onClick={() => pinSiteMutation.mutate({ id: site.id, isDefault: !site.isDefault })}>
                                         <Pin className={cn('h-3 w-3', site.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
                                       </Button>
                                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSiteDialog(client.id, site)}><Pencil className="h-3 w-3" /></Button>
@@ -385,8 +385,8 @@ export default function Clients() {
                           {client.rateRules.length === 0 ? (
                             <div className="text-center py-6 space-y-2">
                               <Euro className="h-8 w-8 mx-auto text-muted-foreground opacity-30" />
-                              <p className="text-sm text-muted-foreground">{language === 'es' ? 'Sin tarifas todavía' : 'No rates yet'}</p>
-                              <p className="text-xs text-muted-foreground">{language === 'es' ? 'Crea una tarifa para poder añadir recursos (personas) con su precio/hora.' : 'Create a rate to add resources (people) with their hourly price.'}</p>
+                              <p className="text-sm text-muted-foreground">{tc.noRates}</p>
+                              <p className="text-xs text-muted-foreground">{tc.noRatesHint}</p>
                               {canManage && (
                                 <Button variant="outline" size="sm" className="gap-1.5 mt-1" onClick={() => openRateDialog(client.id)}>
                                   <Plus className="h-3.5 w-3.5" />{tc.newRate}
@@ -407,13 +407,13 @@ export default function Clients() {
                                         {rule.baseRatePerHour != null && (
                                           <span className="text-foreground font-semibold">{Number(rule.baseRatePerHour).toFixed(2)}{rule.currency}/h</span>
                                         )}
-                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">{Number(rule.overtimeRatePerHour).toFixed(2)}{rule.currency}/h {language === 'es' ? 'extra' : 'overtime'}</span>
+                                        <span className="text-orange-600 dark:text-orange-400 font-semibold">{Number(rule.overtimeRatePerHour).toFixed(2)}{rule.currency}/h {tc.overtimeLabel}</span>
                                         {rule.overtimeTriggers.length > 0 && (
-                                          <span>· {rule.overtimeTriggers.map(t => t === 'WEEKEND' ? (language === 'es' ? 'fin de semana' : 'weekend') : t === 'AFTER_HOURS' ? (language === 'es' ? 'fuera de horario' : 'after hours') : (language === 'es' ? 'manual' : 'manual')).join(', ')}</span>
+                                          <span>· {rule.overtimeTriggers.map(t => t === 'WEEKEND' ? tc.weekendLabel : t === 'AFTER_HOURS' ? tc.afterHoursLabel : tc.manualLabel).join(', ')}</span>
                                         )}
                                       </div>
                                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                                        {language === 'es' ? 'Desde' : 'From'}: {format(new Date(rule.effectiveFrom), 'dd/MM/yyyy')}
+                                        {tc.fromLabel}: {format(new Date(rule.effectiveFrom), 'dd/MM/yyyy')}
                                         {rule.effectiveTo ? ` → ${format(new Date(rule.effectiveTo), 'dd/MM/yyyy')}` : ''}
                                       </p>
                                     </div>
@@ -448,7 +448,7 @@ export default function Clients() {
                                     <div className="px-3 pb-3 pt-1 border-t">
                                       <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 w-full" onClick={() => openResourceDialog(rule.id)}>
                                         <Plus className="h-3 w-3" />
-                                        {language === 'es' ? 'Añadir recurso' : 'Add resource'}
+                                        {tc.addResource}
                                       </Button>
                                     </div>
                                   )}
@@ -570,7 +570,7 @@ export default function Clients() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>{tc.baseRate} <span className="text-muted-foreground text-xs">({language === 'es' ? 'opcional' : 'optional'})</span></Label>
+                <Label>{tc.baseRate} <span className="text-muted-foreground text-xs">({tc.optional})</span></Label>
                 <Input type="number" step="0.01" min="0" placeholder="0.00" {...rateForm.register('baseRatePerHour', { setValueAs: v => (v === '' || v === null || v === undefined || isNaN(Number(v))) ? null : Number(v) })} />
                 {rateForm.formState.errors.baseRatePerHour && <p className="text-xs text-destructive">{rateForm.formState.errors.baseRatePerHour.message as string}</p>}
               </div>
@@ -608,13 +608,13 @@ export default function Clients() {
                 {rateForm.watch('overtimeTriggers').includes('WEEKEND') && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <span className="text-orange-500">⚡</span>
-                    {language === 'es' ? 'Sábado y domingo se marcan automáticamente como hora extra.' : 'Saturday and Sunday are automatically marked as overtime.'}
+                    {tc.weekendHint}
                   </p>
                 )}
                 {rateForm.watch('overtimeTriggers').includes('MANUAL') && (
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <span>✋</span>
-                    {language === 'es' ? 'El empleado (o el responsable) puede marcar manualmente una entrada como hora extra.' : 'The employee (or manager) can manually flag any entry as overtime.'}
+                    {tc.manualHint}
                   </p>
                 )}
               </div>
@@ -658,15 +658,15 @@ export default function Clients() {
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               {resourceDialog.editing
-                ? (language === 'es' ? 'Editar recurso' : 'Edit resource')
-                : (language === 'es' ? 'Nuevo recurso' : 'New resource')}
+                ? tc.editResource
+                : tc.newResource}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={resourceForm.handleSubmit(onResourceSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>{language === 'es' ? 'Nombre del recurso' : 'Resource name'} *</Label>
+              <Label>{tc.resourceName} *</Label>
               <Input
-                placeholder={language === 'es' ? 'ej. Desarrollador Senior' : 'e.g. Senior Developer'}
+                placeholder={tc.resourceNamePlaceholder}
                 {...resourceForm.register('name')}
               />
               {resourceForm.formState.errors.name && (
@@ -674,7 +674,7 @@ export default function Clients() {
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>{language === 'es' ? 'Precio por hora (€)' : 'Hourly rate (€)'} *</Label>
+              <Label>{tc.hourlyRate} *</Label>
               <Input
                 type="number" step="0.01" min="0"
                 {...resourceForm.register('baseRatePerHour', { valueAsNumber: true })}
@@ -724,7 +724,7 @@ export default function Clients() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{tc.deleteSite}</AlertDialogTitle>
-            <AlertDialogDescription>{language === 'es' ? '¿Seguro que quieres eliminar esta sede?' : 'Are you sure you want to delete this site?'}</AlertDialogDescription>
+            <AlertDialogDescription>{tc.deleteSiteConfirm}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{tc.cancel}</AlertDialogCancel>
@@ -743,7 +743,7 @@ export default function Clients() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{tc.deleteRate}</AlertDialogTitle>
-            <AlertDialogDescription>{language === 'es' ? '¿Seguro que quieres eliminar esta tarifa?' : 'Are you sure you want to delete this rate rule?'}</AlertDialogDescription>
+            <AlertDialogDescription>{tc.deleteRateConfirm}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{tc.cancel}</AlertDialogCancel>
@@ -761,9 +761,9 @@ export default function Clients() {
       <AlertDialog open={!!deleteResourceConfirm} onOpenChange={() => setDeleteResourceConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{language === 'es' ? 'Eliminar recurso' : 'Delete resource'}</AlertDialogTitle>
+            <AlertDialogTitle>{tc.deleteResource}</AlertDialogTitle>
             <AlertDialogDescription>
-              {language === 'es' ? '¿Seguro que quieres eliminar este recurso?' : 'Are you sure you want to delete this resource?'}
+              {tc.deleteResourceConfirm}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

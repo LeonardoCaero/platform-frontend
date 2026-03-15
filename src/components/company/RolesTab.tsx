@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CompanyRole } from '@/types/company.types';
 import { Shield, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RolesTabProps {
   roles: CompanyRole[] | undefined;
@@ -10,13 +11,15 @@ interface RolesTabProps {
 }
 
 export function RolesTab({ roles, isLoading }: RolesTabProps) {
+  const { t } = useLanguage();
+  const tr = t.rolesTab;
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Company Roles</h3>
+        <h3 className="text-xl font-semibold">{tr.title}</h3>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Create Role
+          {tr.create}
         </Button>
       </div>
       <div className="space-y-3">
@@ -29,10 +32,10 @@ export function RolesTab({ roles, isLoading }: RolesTabProps) {
             <CardContent className="pt-6">
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
                 <Shield className="h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground">No roles defined</p>
+                <p className="text-muted-foreground">{tr.noRoles}</p>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create First Role
+                  {tr.createFirst}
                 </Button>
               </div>
             </CardContent>
@@ -51,12 +54,12 @@ export function RolesTab({ roles, isLoading }: RolesTabProps) {
                       <h4 className="text-lg font-semibold">{role.name}</h4>
                       {role.isSystem && (
                         <span className="inline-flex items-center rounded-full px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                          System
+                          {tr.system}
                         </span>
                       )}
                       {role.isDefault && (
                         <span className="inline-flex items-center rounded-full px-2 py-1 text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">
-                          Default
+                          {tr.default}
                         </span>
                       )}
                     </div>
@@ -72,10 +75,10 @@ export function RolesTab({ roles, isLoading }: RolesTabProps) {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {role.description || 'No description'}
+                    {role.description || tr.noDescription}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {role._count?.companyMembers || 0} member(s) with this role
+                    {tr.memberCount(role._count?.companyMembers || 0)}
                   </p>
                 </div>
               </CardContent>

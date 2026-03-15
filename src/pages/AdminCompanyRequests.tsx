@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -21,19 +21,15 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { companyRequestsService } from '@/services/company-requests.service';
 import { CompanyRequest, CompanyRequestStatus } from '@/types/company-requests.types';
 import { Loader2, Eye, Search, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AdminCompanyRequests() {
-  const { isPlatformAdmin, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { isPlatformAdmin } = useAuth();
   const { t } = useLanguage();
   const ta = t.adminRequests;
   const queryClient = useQueryClient();
@@ -41,19 +37,6 @@ export default function AdminCompanyRequests() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<CompanyRequest | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-
-  // Redirect if not admin
-  useEffect(() => {
-    if (authLoading) return;
-    if (!isPlatformAdmin) {
-      toast({
-        title: ta.accessDenied,
-        description: ta.accessDeniedDesc,
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-    }
-  }, [isPlatformAdmin, navigate, toast, authLoading]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-company-requests', statusFilter],
@@ -82,20 +65,6 @@ export default function AdminCompanyRequests() {
       request.user?.fullName.toLowerCase().includes(search)
     );
   });
-
-  if (!isPlatformAdmin) {
-    return null;
-  }
-
-  if (authLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>

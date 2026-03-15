@@ -39,8 +39,8 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
   const [selected, setSelected] = useState<UserSearchResult | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
   }, [search]);
 
   const { data: results = [], isLoading } = useQuery({

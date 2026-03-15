@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { InviteMemberModal } from '@/components/company/InviteMemberModal';
 import { CompanyMember } from '@/types/company.types';
 import { Users, Plus } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MembersTabProps {
   companyId: string;
@@ -18,6 +19,8 @@ interface MembersTabProps {
 
 export function MembersTab({ companyId, members, isLoading, canInvite = false }: MembersTabProps) {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const { t, language } = useLanguage();
+  const tm = t.membersTab;
 
   const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || '?';
@@ -26,11 +29,11 @@ export function MembersTab({ companyId, members, isLoading, canInvite = false }:
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-semibold">Company Members</h3>
+        <h3 className="text-xl font-semibold">{tm.title}</h3>
         {canInvite && (
           <Button onClick={() => setInviteOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Invite Member
+            {tm.invite}
           </Button>
         )}
       </div>
@@ -45,11 +48,11 @@ export function MembersTab({ companyId, members, isLoading, canInvite = false }:
           ) : !members?.length ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
               <Users className="h-12 w-12 text-muted-foreground" />
-              <p className="text-muted-foreground">No members yet</p>
+              <p className="text-muted-foreground">{tm.noMembers}</p>
               {canInvite && (
                 <Button onClick={() => setInviteOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Invite First Member
+                  {tm.inviteFirst}
                 </Button>
               )}
             </div>
@@ -57,11 +60,11 @@ export function MembersTab({ companyId, members, isLoading, canInvite = false }:
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Roles</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Joined</TableHead>
+                  <TableHead>{tm.colMember}</TableHead>
+                  <TableHead>{tm.colRoles}</TableHead>
+                  <TableHead>{tm.colPosition}</TableHead>
+                  <TableHead>{tm.colStatus}</TableHead>
+                  <TableHead>{tm.colJoined}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -114,8 +117,8 @@ export function MembersTab({ companyId, members, isLoading, canInvite = false }:
                     </TableCell>
                     <TableCell>
                       {member.activatedAt
-                        ? new Date(member.activatedAt).toLocaleDateString()
-                        : 'Pending'}
+                        ? new Date(member.activatedAt).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US')
+                        : tm.pending}
                     </TableCell>
                   </TableRow>
                 ))}

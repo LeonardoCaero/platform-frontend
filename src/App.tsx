@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { RequireAdmin } from '@/components/RequireAdmin';
 import { useSSE } from '@/hooks/useSSE';
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -148,7 +149,9 @@ const App = () => (
                 path="/admin/company-requests"
                 element={
                   <ProtectedRoute>
-                    <AdminCompanyRequests />
+                    <RequireAdmin>
+                      <AdminCompanyRequests />
+                    </RequireAdmin>
                   </ProtectedRoute>
                 }
               />
@@ -172,7 +175,9 @@ const App = () => (
                 path="/admin/permission-requests"
                 element={
                   <ProtectedRoute>
-                    <AdminPermissionRequests />
+                    <RequireAdmin>
+                      <AdminPermissionRequests />
+                    </RequireAdmin>
                   </ProtectedRoute>
                 }
               />
@@ -180,7 +185,9 @@ const App = () => (
                 path="/admin/permissions"
                 element={
                   <ProtectedRoute>
-                    <Permissions />
+                    <RequireAdmin>
+                      <Permissions />
+                    </RequireAdmin>
                   </ProtectedRoute>
                 }
               />
