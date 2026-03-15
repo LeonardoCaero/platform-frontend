@@ -19,12 +19,12 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { CompanySelector } from '@/components/CompanySelector';
 
 export function Navbar() {
-  const { user, logout, isPlatformAdmin, isOwnerOf, isAdminOf, selectedCompany, viewAsMember, toggleViewAsMember } = useAuth();
+  const { user, logout, isPlatformAdmin, isOwnerOf, selectedCompany, viewAsMember, toggleViewAsMember, hasCompanyPermission } = useAuth();
   const navigate = useNavigate();
   const { t, language, toggleLanguage } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const n = t.nav;
-  const canManageClients = isAdminOf(selectedCompany?.id ?? '');
+  const canManageClients = hasCompanyPermission('CLIENT:VIEW');
   // Real elevated role (not overridden by viewAsMember) — to decide whether to show the toggle
   const hasElevatedRole = (user?.isPlatformAdmin || !!selectedCompany?.roles?.some(r => r.name === 'Owner' || r.name === 'Admin')) ?? false;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

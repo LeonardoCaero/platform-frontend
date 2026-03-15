@@ -33,15 +33,18 @@ export default function CompanyDetail() {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   const cd = t.companyDetail;
-  const { isOwnerOf, getMembershipId, selectedCompany, setSelectedCompany, refreshUser } = useAuth();
+  const { hasCompanyPermission, getMembershipId, selectedCompany, setSelectedCompany, refreshUser } = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
   const companyId = id!;
 
-  // Role-based access control
-  const isOwner = isOwnerOf(companyId); // true for platform admins and company owners
+  // Permission-based access control
+  const canDelete = hasCompanyPermission('COMPANY:DELETE', companyId);
+  const canEditSettings = hasCompanyPermission('COMPANY:EDIT_SETTINGS', companyId);
+  const canInvite = hasCompanyPermission('MEMBER:INVITE', companyId);
+  const canManageRoles = hasCompanyPermission('ROLE:VIEW', companyId);
   const membershipId = getMembershipId(companyId);
   const isMember = !!membershipId; // true only for actual members (not platform admins)
 
@@ -133,7 +136,7 @@ export default function CompanyDetail() {
       <div className="space-y-6">
         <CompanyHeader
           company={company}
-          canManage={isOwner}
+          canManage={canEditSettings}
           onEdit={() => navigate(`/companies/${company.id}/edit`)}
           onDelete={() => setDeleteDialogOpen(true)}
           onRestore={() => setRestoreDialogOpen(true)}
@@ -149,7 +152,7 @@ export default function CompanyDetail() {
               <Users className="h-4 w-4 mr-2" />
               {cd.tabMembers}
             </TabsTrigger>
-            {isOwner && (
+            {canManageRoles && (
               <TabsTrigger value="roles">
                 <Shield className="h-4 w-4 mr-2" />
                 {cd.tabRoles}
@@ -166,10 +169,10 @@ export default function CompanyDetail() {
           </TabsContent>
 
           <TabsContent value="members" className="mt-6">
-            <MembersTab companyId={companyId} members={members} isLoading={membersLoading} canInvite={isOwner} />
+            <MembersTab companyId={companyId} members={members} isLoading={membersLoading} canInvite={canInvite} />
           </TabsContent>
 
-          {isOwner && (
+          {canManageRoles && (
             <TabsContent value="roles" className="mt-6">
               <RolesTab roles={roles} isLoading={rolesLoading} />
             </TabsContent>
@@ -177,7 +180,7 @@ export default function CompanyDetail() {
 
           <TabsContent value="settings" className="mt-6">
             <SettingsTab
-              canDelete={isOwner && !company.deletedAt}
+              canDelete={canDelete && !company.deletedAt}
               canLeave={isMember && !company.deletedAt}
               onDelete={() => setDeleteDialogOpen(true)}
               onLeave={() => setLeaveDialogOpen(true)}

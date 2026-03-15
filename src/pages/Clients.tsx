@@ -37,17 +37,17 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { Navigate } from 'react-router-dom';
+
 
 export default function Clients() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { selectedCompany, isOwnerOf, isAdminOf, isPlatformAdmin } = useAuth();
+  const { selectedCompany, hasCompanyPermission } = useAuth();
   const { t, language } = useLanguage();
   const tc = t.clients;
 
   const companyId = selectedCompany?.id ?? '';
-  const canManage = isAdminOf(companyId);
+  const canManage = hasCompanyPermission('CLIENT:CREATE', companyId);
 
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [clientDialog, setClientDialog] = useState<{ open: boolean; editing?: Client }>({ open: false });
@@ -62,7 +62,7 @@ export default function Clients() {
   const { data: clientsData, isLoading } = useQuery({
     queryKey: ['clients', companyId],
     queryFn: () => clientsService.list({ companyId, page: 1, limit: 200 }),
-    enabled: !!companyId && canManage,
+    enabled: !!companyId,
   });
   const clients = clientsData?.data ?? [];
 
@@ -241,10 +241,6 @@ export default function Clients() {
     }
   };
 
-  if (companyId && !canManage) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   if (!companyId) {
     return (
       <DashboardLayout>
@@ -264,10 +260,12 @@ export default function Clients() {
             </h1>
             {selectedCompany && <p className="text-sm text-muted-foreground mt-0.5">{selectedCompany.name}</p>}
           </div>
-          <Button onClick={() => openClientDialog()} className="gap-2">
-            <Plus className="h-4 w-4" />
-            {tc.newClient}
-          </Button>
+          {canManage && (
+            <Button onClick={() => openClientDialog()} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {tc.newClient}
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
@@ -278,7 +276,7 @@ export default function Clients() {
               <Building2 className="h-10 w-10 mx-auto text-muted-foreground mb-3 opacity-30" />
               <p className="font-medium text-muted-foreground">{tc.noClients}</p>
               <p className="text-sm text-muted-foreground mt-1">{tc.noClientsHint}</p>
-              <Button className="mt-4 gap-2" onClick={() => openClientDialog()}><Plus className="h-4 w-4" />{tc.newClient}</Button>
+              {canManage && <Button className="mt-4 gap-2" onClick={() => openClientDialog()}><Plus className="h-4 w-4" />{tc.newClient}</Button>}
             </CardContent>
           </Card>
         ) : (
@@ -318,11 +316,13 @@ export default function Clients() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" title={client.isDefault ? (language === 'es' ? 'Quitar predeterminado' : 'Remove default') : (language === 'es' ? 'Establecer predeterminado' : 'Set as default')} onClick={e => { e.stopPropagation(); pinClientMutation.mutate({ id: client.id, isDefault: !client.isDefault }); }}>
-                            <Pin className={cn('h-3.5 w-3.5', client.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openClientDialog(client); }}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); setDeleteClientConfirm(client); }}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          {canManage && (<>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title={client.isDefault ? (language === 'es' ? 'Quitar predeterminado' : 'Remove default') : (language === 'es' ? 'Establecer predeterminado' : 'Set as default')} onClick={e => { e.stopPropagation(); pinClientMutation.mutate({ id: client.id, isDefault: !client.isDefault }); }}>
+                              <Pin className={cn('h-3.5 w-3.5', client.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); openClientDialog(client); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={e => { e.stopPropagation(); setDeleteClientConfirm(client); }}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </>)}
                           <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', expandedClient === client.id && 'rotate-180')} />
                         </div>
                       </div>
@@ -337,11 +337,13 @@ export default function Clients() {
                         </TabsList>
 
                         <TabsContent value="sites" className="space-y-2">
-                          <div className="flex justify-end">
-                            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => openSiteDialog(client.id)}>
-                              <Plus className="h-3.5 w-3.5" />{tc.newSite}
-                            </Button>
-                          </div>
+                          {canManage && (
+                            <div className="flex justify-end">
+                              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => openSiteDialog(client.id)}>
+                                <Plus className="h-3.5 w-3.5" />{tc.newSite}
+                              </Button>
+                            </div>
+                          )}
                           {client.sites.length === 0 ? (
                             <p className="text-sm text-muted-foreground text-center py-4">{language === 'es' ? 'Sin sedes todavía' : 'No sites yet'}</p>
                           ) : (
@@ -357,13 +359,15 @@ export default function Clients() {
                                     </div>
                                     {site.city && <p className="text-xs text-muted-foreground ml-5">{site.city}</p>}
                                   </div>
-                                  <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" title={site.isDefault ? (language === 'es' ? 'Quitar predeterminada' : 'Remove default') : (language === 'es' ? 'Establecer predeterminada' : 'Set as default')} onClick={() => pinSiteMutation.mutate({ id: site.id, isDefault: !site.isDefault })}>
-                                      <Pin className={cn('h-3 w-3', site.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSiteDialog(client.id, site)}><Pencil className="h-3 w-3" /></Button>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteSiteConfirm(site)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                                  </div>
+                                  {canManage && (
+                                    <div className="flex gap-1">
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" title={site.isDefault ? (language === 'es' ? 'Quitar predeterminada' : 'Remove default') : (language === 'es' ? 'Establecer predeterminada' : 'Set as default')} onClick={() => pinSiteMutation.mutate({ id: site.id, isDefault: !site.isDefault })}>
+                                        <Pin className={cn('h-3 w-3', site.isDefault ? 'fill-primary text-primary' : 'text-muted-foreground')} />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSiteDialog(client.id, site)}><Pencil className="h-3 w-3" /></Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteSiteConfirm(site)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -371,19 +375,23 @@ export default function Clients() {
                         </TabsContent>
 
                         <TabsContent value="rates" className="space-y-2">
-                          <div className="flex justify-end">
-                            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => openRateDialog(client.id)}>
-                              <Plus className="h-3.5 w-3.5" />{tc.newRate}
-                            </Button>
-                          </div>
+                          {canManage && (
+                            <div className="flex justify-end">
+                              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => openRateDialog(client.id)}>
+                                <Plus className="h-3.5 w-3.5" />{tc.newRate}
+                              </Button>
+                            </div>
+                          )}
                           {client.rateRules.length === 0 ? (
                             <div className="text-center py-6 space-y-2">
                               <Euro className="h-8 w-8 mx-auto text-muted-foreground opacity-30" />
                               <p className="text-sm text-muted-foreground">{language === 'es' ? 'Sin tarifas todavía' : 'No rates yet'}</p>
                               <p className="text-xs text-muted-foreground">{language === 'es' ? 'Crea una tarifa para poder añadir recursos (personas) con su precio/hora.' : 'Create a rate to add resources (people) with their hourly price.'}</p>
-                              <Button variant="outline" size="sm" className="gap-1.5 mt-1" onClick={() => openRateDialog(client.id)}>
-                                <Plus className="h-3.5 w-3.5" />{tc.newRate}
-                              </Button>
+                              {canManage && (
+                                <Button variant="outline" size="sm" className="gap-1.5 mt-1" onClick={() => openRateDialog(client.id)}>
+                                  <Plus className="h-3.5 w-3.5" />{tc.newRate}
+                                </Button>
+                              )}
                             </div>
                           ) : (
                             <div className="space-y-1.5">
@@ -409,10 +417,12 @@ export default function Clients() {
                                         {rule.effectiveTo ? ` → ${format(new Date(rule.effectiveTo), 'dd/MM/yyyy')}` : ''}
                                       </p>
                                     </div>
-                                    <div className="flex gap-1 shrink-0 ml-2">
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openRateDialog(client.id, rule)}><Pencil className="h-3 w-3" /></Button>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteRateConfirm(rule)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                                    </div>
+                                    {canManage && (
+                                      <div className="flex gap-1 shrink-0 ml-2">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openRateDialog(client.id, rule)}><Pencil className="h-3 w-3" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDeleteRateConfirm(rule)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                                      </div>
+                                    )}
                                   </div>
                                   {rule.resources && rule.resources.length > 0 && (
                                     <div className="px-3 pb-1 space-y-0.5 border-t pt-1.5">
@@ -424,20 +434,24 @@ export default function Clients() {
                                             <span className="text-xs text-foreground font-semibold">{Number(r.baseRatePerHour).toFixed(2)}{rule.currency}/h</span>
                                             {!r.isActive && <Badge variant="secondary" className="text-[10px] py-0">{tc.inactive}</Badge>}
                                           </div>
-                                          <div className="flex gap-0.5">
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openResourceDialog(rule.id, r)}><Pencil className="h-2.5 w-2.5" /></Button>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDeleteResourceConfirm(r)}><Trash2 className="h-2.5 w-2.5 text-destructive" /></Button>
-                                          </div>
+                                          {canManage && (
+                                            <div className="flex gap-0.5">
+                                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openResourceDialog(rule.id, r)}><Pencil className="h-2.5 w-2.5" /></Button>
+                                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDeleteResourceConfirm(r)}><Trash2 className="h-2.5 w-2.5 text-destructive" /></Button>
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
                                   )}
-                                  <div className="px-3 pb-3 pt-1 border-t">
-                                    <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 w-full" onClick={() => openResourceDialog(rule.id)}>
-                                      <Plus className="h-3 w-3" />
-                                      {language === 'es' ? 'Añadir recurso' : 'Add resource'}
-                                    </Button>
-                                  </div>
+                                  {canManage && (
+                                    <div className="px-3 pb-3 pt-1 border-t">
+                                      <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 w-full" onClick={() => openResourceDialog(rule.id)}>
+                                        <Plus className="h-3 w-3" />
+                                        {language === 'es' ? 'Añadir recurso' : 'Add resource'}
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

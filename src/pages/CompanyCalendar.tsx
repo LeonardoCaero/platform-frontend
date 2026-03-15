@@ -148,7 +148,7 @@ function NoteCard({ note, canEdit, onEdit, onDelete, cl }: NoteCardProps) {
 
 // Main page
 export default function CompanyCalendar() {
-  const { user, selectedCompany, isAdminOf, isOwnerOf } = useAuth();
+  const { user, selectedCompany, hasCompanyPermission } = useAuth();
   const { t, language } = useLanguage();
   const cl = t.calendar;
   const { toast } = useToast();
@@ -156,10 +156,8 @@ export default function CompanyCalendar() {
 
   const companyId = selectedCompany?.id;
   const dateLocale = language === 'es' ? esLocale : enUS;
-  // Owners/admins can manage anyone's notes and assign to any member
-  const canManage = companyId
-    ? (isOwnerOf(companyId) || isAdminOf(companyId) || (user?.isPlatformAdmin ?? false))
-    : false;
+  // Users with CALENDAR:EDIT_ALL can manage anyone's notes and assign to any member
+  const canManage = companyId ? hasCompanyPermission('CALENDAR:EDIT_ALL', companyId) : false;
   // Any member can create notes (self-assigned) and edit/delete their own
   const canCreate = !!companyId;
 

@@ -27,16 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,7 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { permissionsService } from '@/services/permissions.service';
 import { Permission, PermissionScope } from '@/types/permission.types';
 import { STANDARD_RESOURCES, STANDARD_ACTIONS, generatePermissionKey, validatePermissionKey } from '@/constants/permissions';
-import { Shield, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Shield, Pencil, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 export default function Permissions() {
   const { toast } = useToast();
@@ -53,9 +43,7 @@ export default function Permissions() {
   const [search, setSearch] = useState('');
   const [scopeFilter, setScopeFilter] = useState<PermissionScope | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [permissionToDelete, setPermissionToDelete] = useState<Permission | null>(null);
   const [editingPermission, setEditingPermission] = useState<Permission | null>(null);
 
   // Form state for two-dropdown approach
@@ -98,29 +86,6 @@ export default function Permissions() {
     setCustomAction('');
     setDescription('');
     setScope(PermissionScope.COMPANY);
-  };
-
-  const handleCreatePermission = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!isKeyValid) {
-      toast({ variant: 'destructive', title: p.toastInvalidKey });
-      return;
-    }
-    
-    try {
-      await permissionsService.createPermission({
-        key: permissionKey,
-        description,
-        scope,
-      });
-      toast({ title: p.toastCreated });
-      setIsCreateDialogOpen(false);
-      resetForm();
-      refetch();
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || p.toastCreateError });
-    }
   };
 
   const handleEditClick = (permission: Permission) => {
@@ -179,19 +144,6 @@ export default function Permissions() {
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!permissionToDelete) return;
-
-    try {
-      await permissionsService.deletePermission(permissionToDelete.id);
-      toast({ title: p.toastDeleted });
-      setPermissionToDelete(null);
-      refetch();
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: error.response?.data?.message || p.toastDeleteError });
-    }
-  };
-
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPage(1);
@@ -217,10 +169,6 @@ export default function Permissions() {
               {p.subtitle}
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            {p.createBtn}
-          </Button>
         </div>
 
         {/* Filters */}
@@ -263,12 +211,6 @@ export default function Permissions() {
                 ? p.noPermissionsFiltered
                 : p.noPermissionsEmpty}
             </p>
-            {!search && scopeFilter === 'ALL' && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {p.createBtn}
-              </Button>
-            )}
           </div>
         ) : (
           <>
@@ -305,23 +247,13 @@ export default function Permissions() {
                         {permission._count?.userGlobalPermissions || 0}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditClick(permission)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setPermissionToDelete(permission)}
-                            disabled={(permission._count?.roles || 0) > 0 || (permission._count?.userGlobalPermissions || 0) > 0}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditClick(permission)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -364,159 +296,6 @@ export default function Permissions() {
           </>
         )}
       </div>
-
-      {/* Create Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-        setIsCreateDialogOpen(open);
-        if (!open) resetForm();
-      }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{p.createTitle}</DialogTitle>
-            <DialogDescription>
-              {p.createDesc}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreatePermission}>
-            <div className="space-y-4 py-4">
-              {/* Resource Dropdown */}
-              <div className="space-y-2">
-                <Label htmlFor="resource">{p.resourceLabel}</Label>
-                <Select value={resource} onValueChange={setResource}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={p.resourcePlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STANDARD_RESOURCES.map((res) => (
-                      <SelectItem key={res.value} value={res.value}>
-                        <div className="flex flex-col items-start">
-                          <span>{res.label}</span>
-                          <span className="text-xs text-muted-foreground">{res.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Custom Resource Input */}
-              {resource === 'CUSTOM' && (
-                <div className="space-y-2">
-                  <Label htmlFor="customResource">{p.customResourceLabel}</Label>
-                  <Input
-                    id="customResource"
-                    placeholder={p.customResourcePlaceholder}
-                    value={customResource}
-                    onChange={(e) => setCustomResource(e.target.value.toUpperCase().replace(/[^A-Z_]/g, ''))}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {p.uppercaseHint}
-                  </p>
-                </div>
-              )}
-
-              {/* Action Dropdown */}
-              <div className="space-y-2">
-                <Label htmlFor="action">{p.actionLabel}</Label>
-                <Select value={action} onValueChange={setAction}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={p.actionPlaceholder} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STANDARD_ACTIONS.map((act) => (
-                      <SelectItem key={act.value} value={act.value}>
-                        <div className="flex flex-col">
-                          <span>{act.label}</span>
-                          <span className="text-xs text-muted-foreground">{act.description}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Custom Action Input */}
-              {action === 'CUSTOM' && (
-                <div className="space-y-2">
-                  <Label htmlFor="customAction">{p.customActionLabel}</Label>
-                  <Input
-                    id="customAction"
-                    placeholder={p.customActionPlaceholder}
-                    value={customAction}
-                    onChange={(e) => setCustomAction(e.target.value.toUpperCase().replace(/[^A-Z_]/g, ''))}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {p.uppercaseHint}
-                  </p>
-                </div>
-              )}
-
-              {/* Permission Key Preview */}
-              {permissionKey && (
-                <div className="space-y-2 p-4 bg-muted rounded-lg">
-                  <Label className="text-sm font-medium">{p.keyPreview}</Label>
-                  <div className={`font-mono text-lg font-bold ${isKeyValid ? 'text-green-600' : 'text-red-500'}`}>
-                    {permissionKey || p.keyEmpty}
-                  </div>
-                  {!isKeyValid && permissionKey && (
-                    <p className="text-xs text-red-500">
-                      {p.keyInvalid}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">{p.descriptionLabel}</Label>
-                <Input
-                  id="description"
-                  placeholder={p.descriptionPlaceholder}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                />
-              </div>
-
-              {/* Scope */}
-              <div className="space-y-2">
-                <Label htmlFor="scope">{p.scopeLabel}</Label>
-                <Select
-                  value={scope}
-                  onValueChange={(value) => setScope(value as PermissionScope)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={PermissionScope.GLOBAL}>
-                      <div className="flex flex-col items-start">
-                        <span>{p.global}</span>
-                        <span className="text-xs text-muted-foreground">{p.globalDesc}</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value={PermissionScope.COMPANY}>
-                      <div className="flex flex-col items-start">
-                        <span>{p.company}</span>
-                        <span className="text-xs text-muted-foreground">{p.companyDesc}</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                {p.cancel}
-              </Button>
-              <Button type="submit" disabled={!isKeyValid}>
-                {p.createSave}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
@@ -671,25 +450,6 @@ export default function Permissions() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!permissionToDelete} onOpenChange={() => setPermissionToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{p.deleteConfirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {p.deleteConfirmDesc}{' '}
-              <span className="font-mono font-semibold">{permissionToDelete?.key}</span>.
-              {p.deleteConfirmWarning}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{p.cancel}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>
-              {p.delete}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </DashboardLayout>
   );
 }

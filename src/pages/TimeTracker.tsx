@@ -525,7 +525,7 @@ function EntryForm({
 export default function TimeTracker() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user, selectedCompany, isOwnerOf, isPlatformAdmin } = useAuth();
+  const { user, selectedCompany, hasCompanyPermission } = useAuth();
   const { t, language } = useLanguage();
   const tt = t.timeTracker;
   const locale = language === 'es' ? es : enUS;
@@ -562,8 +562,7 @@ export default function TimeTracker() {
   const defaultsAppliedRef = useRef(false);
 
   const companyId = selectedCompany?.id ?? '';
-  const isOwner = isOwnerOf(companyId);
-  const canManageAll = isOwner || isPlatformAdmin;
+  const canManageAll = hasCompanyPermission('TIME:EDIT_ALL', companyId);
 
   const getDateRange = () => {
     switch (view) {

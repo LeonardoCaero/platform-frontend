@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasCompanyPermission = useCallback((permission: string, companyId?: string): boolean => {
     if (!user) return false;
+    if (viewAsMember) return false;
     if (user.isPlatformAdmin) return true;
     
     const targetCompany = companyId 
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : selectedCompany;
     
     return targetCompany?.permissions?.includes(permission) || false;
-  }, [user, selectedCompany]);
+  }, [user, selectedCompany, viewAsMember]);
 
   const refreshUser = useCallback(async () => {
     try {
