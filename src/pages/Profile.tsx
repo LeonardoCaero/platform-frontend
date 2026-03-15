@@ -114,6 +114,7 @@ export default function Profile() {
     try {
       const url = await uploadsService.uploadAvatar(file);
       profileForm.setValue('avatar', url, { shouldDirty: true });
+      toast({ title: t.profile.avatarUpdated });
     } catch {
       toast({ variant: 'destructive', title: t.profile.uploadError });
       setAvatarPreview(null);
