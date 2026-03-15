@@ -20,7 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { usersService } from "@/services/users.service";
 import { profileSchema, passwordSchema, type ProfileFormData, type PasswordFormData } from "@/schemas/profile.schemas";
-import { Loader2, User } from "lucide-react";
+import { Loader2, User, Camera } from "lucide-react";
+import { useRef } from "react";
 import { uploadsService } from "@/services/uploads.service";
 
 export default function Profile() {
@@ -29,6 +30,7 @@ export default function Profile() {
   const { t } = useLanguage();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -139,21 +141,46 @@ export default function Profile() {
             </CardHeader>
             <CardContent>
               <div className="mb-6 flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={avatarPreview ?? user?.avatar} alt={user?.fullName} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                    {user?.fullName ? (
-                      getInitials(user.fullName)
-                    ) : (
-                      <User className="h-8 w-8" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
+                {/* Clickable avatar — triggers hidden file input */}
+                <button
+                  type="button"
+                  className="relative h-20 w-20 rounded-full group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  aria-label={t.profile.changeAvatar}
+                >
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={avatarPreview ?? user?.avatar} alt={user?.fullName} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                      {user?.fullName ? getInitials(user.fullName) : <User className="h-8 w-8" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  {/* Overlay */}
+                  <div className="absolute inset-0 rounded-full flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isUploadingAvatar
+                      ? <Loader2 className="h-5 w-5 text-white animate-spin" />
+                      : <Camera className="h-5 w-5 text-white" />}
+                  </div>
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                  disabled={isUploadingAvatar}
+                />
                 <div>
-                  <p className="font-medium text-foreground">
-                    {user?.fullName}
-                  </p>
+                  <p className="font-medium text-foreground">{user?.fullName}</p>
                   <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline mt-1"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                  >
+                    {isUploadingAvatar ? <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" />{t.profile.saving}</span> : t.profile.changeAvatar}
+                  </button>
                 </div>
               </div>
 
@@ -200,21 +227,6 @@ export default function Profile() {
                       {profileForm.formState.errors.phone.message}
                     </p>
                   )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="avatar">{t.profile.avatarUrl}</Label>
-                  <div className="flex items-center gap-3">
-                    <Input
-                      id="avatar"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={handleAvatarUpload}
-                      disabled={isUploadingAvatar}
-                      className="cursor-pointer"
-                    />
-                    {isUploadingAvatar && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
-                  </div>
                 </div>
 
                 <Button
