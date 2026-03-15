@@ -21,11 +21,14 @@ import { useToast } from "@/hooks/use-toast";
 import { usersService } from "@/services/users.service";
 import { profileSchema, passwordSchema, type ProfileFormData, type PasswordFormData } from "@/schemas/profile.schemas";
 import { Loader2, User } from "lucide-react";
+import { uploadsService } from "@/services/uploads.service";
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -100,6 +103,23 @@ export default function Profile() {
       .slice(0, 2);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localPreview = URL.createObjectURL(file);
+    setAvatarPreview(localPreview);
+    setIsUploadingAvatar(true);
+    try {
+      const url = await uploadsService.uploadAvatar(file);
+      profileForm.setValue('avatar', url, { shouldDirty: true });
+    } catch {
+      toast({ variant: 'destructive', title: t.profile.uploadError });
+      setAvatarPreview(null);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -120,7 +140,7 @@ export default function Profile() {
             <CardContent>
               <div className="mb-6 flex items-center gap-4">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src={user?.avatar} alt={user?.fullName} />
+                  <AvatarImage src={avatarPreview ?? user?.avatar} alt={user?.fullName} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xl">
                     {user?.fullName ? (
                       getInitials(user.fullName)
@@ -184,17 +204,17 @@ export default function Profile() {
 
                 <div className="space-y-2">
                   <Label htmlFor="avatar">{t.profile.avatarUrl}</Label>
-                  <Input
-                    id="avatar"
-                    type="url"
-                    placeholder={t.profile.avatarUrlPlaceholder}
-                    {...profileForm.register("avatar")}
-                  />
-                  {profileForm.formState.errors.avatar && (
-                    <p className="text-sm text-destructive">
-                      {profileForm.formState.errors.avatar.message}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="avatar"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleAvatarUpload}
+                      disabled={isUploadingAvatar}
+                      className="cursor-pointer"
+                    />
+                    {isUploadingAvatar && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+                  </div>
                 </div>
 
                 <Button

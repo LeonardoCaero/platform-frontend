@@ -9,7 +9,7 @@ const companyBaseSchema = {
     .min(2, 'Slug must be at least 2 characters')
     .max(255, 'Slug is too long')
     .regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
-  logo: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  logo: z.string().max(2048).optional().or(z.literal('')),
   description: z.string().max(5000, 'Description is too long').optional(),
 };
 

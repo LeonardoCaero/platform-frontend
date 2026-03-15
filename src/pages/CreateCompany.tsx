@@ -17,6 +17,7 @@ import { companyMembersService } from '@/services/company-members.service';
 import { usersService } from '@/services/users.service';
 import type { PlatformUser } from '@/services/users.service';
 import { Building2, Loader2, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Check, Search, UserX, Users } from 'lucide-react';
+import { uploadsService } from '@/services/uploads.service';
 
 interface CompanyFormData {
   name: string;
@@ -33,6 +34,8 @@ export default function CreateCompany() {
   const cc = t.createCompany;
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   // Check permission
   useEffect(() => {
@@ -122,6 +125,23 @@ export default function CreateCompany() {
   };
 
   const canProceedStep1 = companyData.name && companyData.slug && slugAvailable === true;
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localPreview = URL.createObjectURL(file);
+    setLogoPreview(localPreview);
+    setIsUploadingLogo(true);
+    try {
+      const url = await uploadsService.uploadLogo(file);
+      setCompanyData(prev => ({ ...prev, logo: url }));
+    } catch {
+      toast({ variant: 'destructive', title: cc.uploadError });
+      setLogoPreview(null);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   const handleNext = () => {
     if (currentStep === 1 && !canProceedStep1) {
@@ -287,16 +307,20 @@ export default function CreateCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="logo">{cc.logoUrl}</Label>
-                <Input
-                  id="logo"
-                  type="url"
-                  placeholder={cc.logoPlaceholder}
-                  value={companyData.logo}
-                  onChange={(e) => setCompanyData({ ...companyData, logo: e.target.value })}
-                />
-                {companyData.logo && (
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoUpload}
+                    disabled={isUploadingLogo}
+                    className="cursor-pointer"
+                  />
+                  {isUploadingLogo && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+                </div>
+                {(logoPreview || companyData.logo) && !isUploadingLogo && (
                   <div className="flex items-center gap-2">
-                    <img src={companyData.logo} alt="Logo preview" className="h-10 w-10 rounded" />
+                    <img src={logoPreview ?? companyData.logo} alt="Logo preview" className="h-10 w-10 rounded object-cover" />
                     <span className="text-sm text-muted-foreground">{cc.preview}</span>
                   </div>
                 )}

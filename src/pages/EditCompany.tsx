@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -23,6 +23,7 @@ import { companiesService } from '@/services/companies.service';
 import { CompanyStatus } from '@/types/company.types';
 import { updateCompanySchema, UpdateCompanyFormData } from '@/schemas/company.schemas';
 import { Save, Building2, Loader2 } from 'lucide-react';
+import { uploadsService } from '@/services/uploads.service';
 
 export default function EditCompany() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,9 @@ export default function EditCompany() {
   const { t } = useLanguage();
   const ec = t.editCompany;
   const companyId = id!;
+
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const { data: company, isLoading } = useQuery({
     queryKey: ['company', companyId],
@@ -82,6 +86,23 @@ export default function EditCompany() {
 
   const onSubmit = (values: UpdateCompanyFormData) => {
     updateMutation.mutate(values);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const localPreview = URL.createObjectURL(file);
+    setLogoPreview(localPreview);
+    setIsUploadingLogo(true);
+    try {
+      const url = await uploadsService.uploadLogo(file);
+      form.setValue('logo', url, { shouldDirty: true });
+    } catch {
+      toast({ variant: 'destructive', title: ec.uploadError });
+      setLogoPreview(null);
+    } finally {
+      setIsUploadingLogo(false);
+    }
   };
 
   if (isLoading) {
@@ -164,15 +185,20 @@ export default function EditCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="logo">{ec.logoUrl}</Label>
-                <Input
-                  id="logo"
-                  type="url"
-                  placeholder={ec.logoPlaceholder}
-                  {...form.register('logo')}
-                />
-                {form.formState.errors.logo && (
-                  <p className="text-sm text-destructive">{form.formState.errors.logo.message}</p>
-                )}
+                <div className="flex items-center gap-3">
+                  {(logoPreview || form.watch('logo')) && !isUploadingLogo && (
+                    <img src={logoPreview ?? form.watch('logo')} alt="Logo preview" className="h-10 w-10 rounded object-cover shrink-0" />
+                  )}
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleLogoUpload}
+                    disabled={isUploadingLogo}
+                    className="cursor-pointer"
+                  />
+                  {isUploadingLogo && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+                </div>
               </div>
 
               <div className="space-y-2">

@@ -5,7 +5,7 @@ export const profileSchema = z.object({
   phone: z.string().optional(),
   avatar: z
     .string()
-    .url('Please enter a valid URL')
+    .max(2048)
     .optional()
     .or(z.literal('')),
 });
