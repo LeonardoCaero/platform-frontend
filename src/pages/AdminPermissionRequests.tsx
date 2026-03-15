@@ -37,11 +37,14 @@ import { permissionRequestsService } from '@/services/permission-requests.servic
 import { PermissionRequest, PermissionRequestStatus } from '@/types/permission-requests.types';
 import { Loader2, Eye, Search, ShieldCheck, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AdminPermissionRequests() {
   const { isPlatformAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const ta = t.adminRequests;
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,8 +58,8 @@ export default function AdminPermissionRequests() {
     if (authLoading) return;
     if (!isPlatformAdmin) {
       toast({
-        title: 'Access Denied',
-        description: 'You do not have permission to access this page',
+        title: ta.accessDenied,
+        description: ta.accessDeniedDesc,
         variant: 'destructive',
       });
       navigate('/dashboard');
@@ -77,18 +80,18 @@ export default function AdminPermissionRequests() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-permission-requests'] });
       toast({
-        title: variables.action === 'approve' ? 'Request approved' : 'Request rejected',
+        title: variables.action === 'approve' ? ta.approveSuccess : ta.rejectSuccess,
         description:
           variables.action === 'approve'
-            ? 'Permission has been granted to the user.'
-            : 'Permission request has been rejected.',
+            ? ta.permApprovedDesc
+            : ta.permRejectedDesc,
       });
       setIsReviewModalOpen(false);
     },
     onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to review request',
+        title: ta.reviewError,
+        description: error.response?.data?.message || ta.reviewError,
         variant: 'destructive',
       });
     },
@@ -155,9 +158,9 @@ export default function AdminPermissionRequests() {
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">Admin Panel - Permission Requests</h1>
+            <h1 className="text-3xl font-bold">{ta.panelPermTitle}</h1>
             <p className="mt-1 text-muted-foreground">
-              Review and manage all permission requests
+              {ta.permSubtitle}
             </p>
           </div>
         </div>
@@ -166,14 +169,14 @@ export default function AdminPermissionRequests() {
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>All Permission Requests</CardTitle>
-                <CardDescription>Review pending and completed requests</CardDescription>
+                <CardTitle>{ta.allPermRequestsTitle}</CardTitle>
+                <CardDescription>{ta.allRequestsDesc}</CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search by user, permission..."
+                    placeholder={ta.searchPermPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9 w-full sm:w-[250px]"
@@ -181,14 +184,14 @@ export default function AdminPermissionRequests() {
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={ta.filterStatusPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Statuses</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="APPROVED">Approved</SelectItem>
-                    <SelectItem value="REJECTED">Rejected</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="ALL">{ta.allStatuses}</SelectItem>
+                    <SelectItem value="PENDING">{t.requests.pending}</SelectItem>
+                    <SelectItem value="APPROVED">{t.requests.approved}</SelectItem>
+                    <SelectItem value="REJECTED">{t.requests.rejected}</SelectItem>
+                    <SelectItem value="CANCELLED">{t.requests.cancelled}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -202,7 +205,7 @@ export default function AdminPermissionRequests() {
             ) : filteredRequests.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
-                  {searchTerm ? 'No requests match your search' : 'No requests found'}
+                  {searchTerm ? ta.noSearchMatch : ta.noRequests}
                 </p>
               </div>
             ) : (
@@ -210,12 +213,12 @@ export default function AdminPermissionRequests() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Permission</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Reviewed</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{ta.colUser}</TableHead>
+                      <TableHead>{ta.colPermission}</TableHead>
+                      <TableHead>{ta.colStatus}</TableHead>
+                      <TableHead>{ta.colSubmitted}</TableHead>
+                      <TableHead>{ta.colReviewed}</TableHead>
+                      <TableHead className="text-right">{ta.colActions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -224,7 +227,7 @@ export default function AdminPermissionRequests() {
                         <TableCell>
                           <div>
                             <p className="font-medium text-sm">
-                              {request.user?.fullName || 'Unknown'}
+                              {request.user?.fullName || ta.unknown}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {request.user?.email || '-'}
@@ -263,7 +266,7 @@ export default function AdminPermissionRequests() {
                                 onClick={() => handleReviewClick(request, 'approve')}
                               >
                                 <Check className="mr-1 h-4 w-4" />
-                                Approve
+                                {ta.approve}
                               </Button>
                               <Button
                                 variant="destructive"
@@ -271,7 +274,7 @@ export default function AdminPermissionRequests() {
                                 onClick={() => handleReviewClick(request, 'reject')}
                               >
                                 <X className="mr-1 h-4 w-4" />
-                                Reject
+                                {ta.reject}
                               </Button>
                             </div>
                           ) : (
@@ -292,22 +295,20 @@ export default function AdminPermissionRequests() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {reviewAction === 'approve' ? 'Approve' : 'Reject'} Permission Request
+              {reviewAction === 'approve' ? ta.approvePermTitle : ta.rejectPermTitle}
             </DialogTitle>
             <DialogDescription>
-              {reviewAction === 'approve'
-                ? 'Approving this request will grant the permission to the user.'
-                : 'Rejecting this request will deny the permission to the user.'}
+              {reviewAction === 'approve' ? ta.approvePermDesc : ta.rejectPermDesc}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium">User</p>
+              <p className="text-sm font-medium">{ta.userLabel}</p>
               <p className="text-sm text-muted-foreground">{selectedRequest?.user?.fullName}</p>
               <p className="text-xs text-muted-foreground">{selectedRequest?.user?.email}</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Requested Permission</p>
+              <p className="text-sm font-medium">{ta.requestedPermLabel}</p>
               <p className="text-sm text-muted-foreground">
                 {selectedRequest?.requestedPermission?.key}
               </p>
@@ -319,15 +320,15 @@ export default function AdminPermissionRequests() {
             </div>
             {selectedRequest?.reason && (
               <div>
-                <p className="text-sm font-medium">User's Reason</p>
+                <p className="text-sm font-medium">{ta.userReasonLabel}</p>
                 <p className="text-sm text-muted-foreground">{selectedRequest.reason}</p>
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="reviewNotes">Review Notes (optional)</Label>
+              <Label htmlFor="reviewNotes">{ta.reviewNotes}</Label>
               <Textarea
                 id="reviewNotes"
-                placeholder="Add any notes about your decision..."
+                placeholder={ta.reviewNotesPlaceholder}
                 value={reviewNotes}
                 onChange={(e) => setReviewNotes(e.target.value)}
                 rows={3}
@@ -336,7 +337,7 @@ export default function AdminPermissionRequests() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsReviewModalOpen(false)}>
-              Cancel
+              {t.createCompany.cancel}
             </Button>
             <Button
               variant={reviewAction === 'approve' ? 'default' : 'destructive'}
@@ -344,7 +345,7 @@ export default function AdminPermissionRequests() {
               disabled={reviewMutation.isPending}
             >
               {reviewMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {reviewAction === 'approve' ? 'Approve' : 'Reject'}
+              {reviewAction === 'approve' ? ta.approve : ta.reject}
             </Button>
           </DialogFooter>
         </DialogContent>

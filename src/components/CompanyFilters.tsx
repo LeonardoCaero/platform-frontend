@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, X } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CompanyFiltersProps {
   onFilterChange: (filters: FilterValues) => void;
@@ -27,6 +28,8 @@ export function CompanyFilters({ onFilterChange }: CompanyFiltersProps) {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<CompanyStatus | 'ALL'>('ALL');
   const [includeDeleted, setIncludeDeleted] = useState(false);
+  const { t } = useLanguage();
+  const tf = t.companyFilters;
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -58,7 +61,7 @@ export function CompanyFilters({ onFilterChange }: CompanyFiltersProps) {
       <div className="relative flex-1 min-w-[200px] max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by name or slug..."
+          placeholder={tf.searchPlaceholder}
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="pl-9"
@@ -67,12 +70,12 @@ export function CompanyFilters({ onFilterChange }: CompanyFiltersProps) {
 
       <Select value={status} onValueChange={handleStatusChange}>
         <SelectTrigger className="w-[180px]">
-          <SelectValue placeholder="Filter by status" />
+          <SelectValue placeholder={tf.filterStatus} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">All Status</SelectItem>
-          <SelectItem value={CompanyStatus.ACTIVE}>Active</SelectItem>
-          <SelectItem value={CompanyStatus.SUSPENDED}>Suspended</SelectItem>
+          <SelectItem value="ALL">{tf.allStatus}</SelectItem>
+          <SelectItem value={CompanyStatus.ACTIVE}>{tf.active}</SelectItem>
+          <SelectItem value={CompanyStatus.SUSPENDED}>{tf.suspended}</SelectItem>
         </SelectContent>
       </Select>
 
@@ -83,14 +86,14 @@ export function CompanyFilters({ onFilterChange }: CompanyFiltersProps) {
           onCheckedChange={(checked) => handleIncludeDeletedChange(checked === true)}
         />
         <Label htmlFor="includeDeleted" className="text-sm cursor-pointer">
-          Show deleted
+          {tf.showDeleted}
         </Label>
       </div>
 
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={clearFilters}>
           <X className="h-4 w-4 mr-1" />
-          Clear filters
+          {tf.clearFilters}
         </Button>
       )}
     </div>

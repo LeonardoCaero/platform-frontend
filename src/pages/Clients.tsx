@@ -484,12 +484,12 @@ export default function Clients() {
               </div>
               <div className="space-y-1.5">
                 <Label>{tc.phone}</Label>
-                <Input placeholder="+34 600 000 000" {...clientForm.register('phone')} />
+                <Input placeholder={tc.phonePlaceholder} {...clientForm.register('phone')} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>{tc.email}</Label>
-              <Input type="email" placeholder="contact@company.com" {...clientForm.register('email')} />
+              <Input type="email" placeholder={tc.emailPlaceholder} {...clientForm.register('email')} />
               {clientForm.formState.errors.email && <p className="text-xs text-destructive">{clientForm.formState.errors.email.message}</p>}
             </div>
             <div className="space-y-1.5">
@@ -565,7 +565,7 @@ export default function Clients() {
           <form onSubmit={rateForm.handleSubmit(onRateSubmit)} className="space-y-4">
             <div className="space-y-1.5">
               <Label>{tc.rateName} *</Label>
-              <Input placeholder={language === 'es' ? 'ej. Tarifa estándar Siegfried' : 'e.g. Standard Siegfried rate'} {...rateForm.register('name')} />
+              <Input placeholder={tc.rateNamePlaceholder} {...rateForm.register('name')} />
               {rateForm.formState.errors.name && <p className="text-xs text-destructive">{rateForm.formState.errors.name.message as string}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">

@@ -247,7 +247,7 @@ export default function CreateCompany() {
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Acme Corporation"
+                  placeholder={cc.namePlaceholder}
                   value={companyData.name}
                   onChange={(e) => setCompanyData({ ...companyData, name: e.target.value })}
                   required
@@ -260,7 +260,7 @@ export default function CreateCompany() {
                 </Label>
                 <Input
                   id="slug"
-                  placeholder="acme-corporation"
+                  placeholder={cc.slugPlaceholder}
                   value={companyData.slug}
                   onChange={(e) => handleSlugChange(e.target.value)}
                   required
@@ -290,7 +290,7 @@ export default function CreateCompany() {
                 <Input
                   id="logo"
                   type="url"
-                  placeholder="https://example.com/logo.png"
+                  placeholder={cc.logoPlaceholder}
                   value={companyData.logo}
                   onChange={(e) => setCompanyData({ ...companyData, logo: e.target.value })}
                 />
@@ -306,7 +306,7 @@ export default function CreateCompany() {
                 <Label htmlFor="description">{cc.description}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Brief description of your company..."
+                  placeholder={cc.descriptionPlaceholder}
                   value={companyData.description}
                   onChange={(e) => setCompanyData({ ...companyData, description: e.target.value })}
                   rows={4}

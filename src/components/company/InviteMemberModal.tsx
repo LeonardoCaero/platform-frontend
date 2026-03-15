@@ -17,6 +17,7 @@ import { companyMembersService } from '@/services/company-members.service';
 import type { UserSearchResult } from '@/types/company.types';
 import { Check, Search, UserX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface InviteMemberModalProps {
   open: boolean;
@@ -31,6 +32,8 @@ function getInitials(u: UserSearchResult) {
 export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMemberModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
+  const tm = t.inviteMember;
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selected, setSelected] = useState<UserSearchResult | null>(null);
@@ -50,7 +53,7 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
     mutationFn: () => companyMembersService.inviteMember(companyId, { userId: selected!.id }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-members', companyId] });
-      toast({ title: `${selected!.firstName} added to the company` });
+      toast({ title: tm.addedToast(selected!.firstName) });
       handleClose();
     },
     onError: (error: any) => {
@@ -72,9 +75,9 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Member</DialogTitle>
+          <DialogTitle>{tm.title}</DialogTitle>
           <DialogDescription>
-            Search for a platform user to add to this company. They will be added as INVITED.
+            {tm.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -83,7 +86,7 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or email..."
+              placeholder={tm.searchPlaceholder}
               className="pl-9"
               value={search}
               onChange={(e) => {
@@ -111,7 +114,7 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
               <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-2">
                 <UserX className="h-8 w-8" />
                 <p className="text-sm">
-                  {search ? 'No users found matching your search' : 'No users available to add'}
+                  {search ? tm.noUsersSearch : tm.noUsers}
                 </p>
               </div>
             ) : (
@@ -146,18 +149,18 @@ export function InviteMemberModal({ open, onOpenChange, companyId }: InviteMembe
 
           {selected && (
             <p className="text-sm text-muted-foreground">
-              Selected: <strong>{selected.firstName} {selected.lastName}</strong>
+              {tm.selected}: <strong>{selected.firstName} {selected.lastName}</strong>
             </p>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          <Button variant="outline" onClick={handleClose}>{tm.cancel}</Button>
           <Button
             disabled={!selected || inviteMutation.isPending}
             onClick={() => inviteMutation.mutate()}
           >
-            {inviteMutation.isPending ? 'Adding...' : 'Add Member'}
+            {inviteMutation.isPending ? tm.adding : tm.add}
           </Button>
         </DialogFooter>
       </DialogContent>

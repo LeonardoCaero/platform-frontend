@@ -17,11 +17,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { permissionRequestsService } from '@/services/permission-requests.service';
 import { Permission, PermissionRequestStatus } from '@/types/permission-requests.types';
 import { Loader2, AlertCircle, Key } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function RequestPermission() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const rq = t.requests;
   const [isLoading, setIsLoading] = useState(false);
   const [{ loadingPermissions, availablePermissions }, setPermState] = useState<{
     loadingPermissions: boolean;
@@ -54,8 +57,8 @@ export default function RequestPermission() {
         setPermState({ loadingPermissions: false, availablePermissions: available });
       } catch (error) {
         toast({
-          title: 'Error',
-          description: 'Failed to load available permissions',
+          title: rq.error,
+          description: rq.loadPermissionsError,
           variant: 'destructive',
         });
         setPermState({ loadingPermissions: false, availablePermissions: [] });
@@ -70,8 +73,8 @@ export default function RequestPermission() {
 
     if (!formData.requestedPermissionId) {
       toast({
-        title: 'Permission required',
-        description: 'Please select a permission to request',
+        title: rq.permRequired,
+        description: rq.permRequiredDesc,
         variant: 'destructive',
       });
       return;
@@ -85,15 +88,15 @@ export default function RequestPermission() {
       });
 
       toast({
-        title: 'Request submitted!',
-        description: 'An admin will review your permission request soon.',
+        title: rq.submitPermSuccess,
+        description: rq.submitPermSuccessDesc,
       });
 
       navigate('/my-permission-requests');
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit request',
+        title: rq.error,
+        description: error.response?.data?.message || rq.submitError,
         variant: 'destructive',
       });
     } finally {
@@ -107,17 +110,17 @@ export default function RequestPermission() {
         <div className="flex items-center gap-3">
           <Key className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">Request Permission</h1>
+            <h1 className="text-3xl font-bold">{rq.requestPermPageTitle}</h1>
             <p className="mt-1 text-muted-foreground">
-              Submit a request to gain additional permissions
+              {rq.requestPermPageSubtitle}
             </p>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Permission Request</CardTitle>
-            <CardDescription>Choose the permission you need and explain why</CardDescription>
+            <CardTitle>{rq.requestPermCardTitle}</CardTitle>
+            <CardDescription>{rq.requestPermCardDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -128,7 +131,7 @@ export default function RequestPermission() {
                 {loadingPermissions ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading available permissions...
+                    {rq.loadingPermissions}
                   </div>
                 ) : availablePermissions.length === 0 ? (
                   <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950">
@@ -136,10 +139,10 @@ export default function RequestPermission() {
                       <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       <div>
                         <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                          No permissions available
+                          {rq.noPermissionsAvailableTitle}
                         </p>
                         <p className="text-sm text-blue-700 dark:text-blue-300">
-                          You already have all available global permissions, or there are no permissions to request.
+                          {rq.noPermissionsAvailableDesc}
                         </p>
                       </div>
                     </div>
@@ -152,7 +155,7 @@ export default function RequestPermission() {
                     }
                   >
                     <SelectTrigger id="permission">
-                      <SelectValue placeholder="Select a permission" />
+                    <SelectValue placeholder={rq.selectPermissionPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
                       {availablePermissions.map((permission) => (
@@ -173,10 +176,10 @@ export default function RequestPermission() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Reason (optional)</Label>
+                <Label htmlFor="reason">{rq.reason}</Label>
                 <Textarea
                   id="reason"
-                  placeholder="Explain why you need this permission..."
+                  placeholder={rq.reasonPlaceholder}
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   rows={4}
@@ -189,7 +192,7 @@ export default function RequestPermission() {
                 <div className="flex gap-2">
                   <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Your request will be reviewed by a platform administrator. You'll be notified once it's approved or rejected.
+                    {rq.permReviewNotice}
                   </p>
                 </div>
               </div>
@@ -200,10 +203,10 @@ export default function RequestPermission() {
                   disabled={isLoading || availablePermissions.length === 0}
                 >
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Submit Request
+                  {rq.submitRequest}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => navigate('/')}>
-                  Cancel
+                  {t.createCompany.cancel}
                 </Button>
               </div>
             </form>

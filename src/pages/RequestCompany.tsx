@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,9 @@ import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 export default function RequestCompany() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const rq = t.requests;
+  const cc = t.createCompany;
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -39,8 +43,8 @@ export default function RequestCompany() {
 
     if (!slugAvailable) {
       toast({
-        title: 'Invalid slug',
-        description: 'Please choose an available slug',
+        title: rq.invalidSlugTitle,
+        description: rq.invalidSlugDesc,
         variant: 'destructive',
       });
       return;
@@ -56,15 +60,15 @@ export default function RequestCompany() {
       });
 
       toast({
-        title: 'Request submitted!',
-        description: 'An admin will review your company request soon.',
+        title: rq.submitCompanySuccess,
+        description: rq.submitCompanySuccessDesc,
       });
 
       navigate('/my-requests');
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to submit request',
+        title: rq.error,
+        description: error.response?.data?.message || rq.submitError,
         variant: 'destructive',
       });
     } finally {
@@ -81,26 +85,26 @@ export default function RequestCompany() {
     <DashboardLayout>
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Request Company Creation</h1>
+          <h1 className="text-3xl font-bold">{rq.createTitle}</h1>
           <p className="mt-2 text-muted-foreground">
-            Submit a request to create a new company. An admin will review and approve it.
+            {rq.createSubtitle}
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Company Information</CardTitle>
-            <CardDescription>Provide details about the company you want to create</CardDescription>
+            <CardTitle>{rq.infoTitle}</CardTitle>
+            <CardDescription>{rq.infoDesc}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="companyName">
-                  Company Name <span className="text-destructive">*</span>
+                  {rq.companyNameLabel} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="companyName"
-                  placeholder="Acme Corporation"
+                  placeholder={rq.companyNamePlaceholder}
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                   required
@@ -110,11 +114,11 @@ export default function RequestCompany() {
 
               <div className="space-y-2">
                 <Label htmlFor="companySlug">
-                  Company Slug <span className="text-destructive">*</span>
+                  {rq.companySlug} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="companySlug"
-                  placeholder="acme-corporation"
+                  placeholder={rq.companySlugPlaceholder}
                   value={formData.companySlug}
                   onChange={(e) => handleSlugChange(e.target.value)}
                   required
@@ -124,28 +128,28 @@ export default function RequestCompany() {
                 {isCheckingSlug && (
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Checking availability...
+                    {cc.checkingSlug}
                   </p>
                 )}
                 {!isCheckingSlug && slugAvailable === true && (
                   <p className="text-sm text-green-600 flex items-center gap-2">
                     <CheckCircle className="h-3 w-3" />
-                    Slug is available
+                    {cc.slugAvailable}
                   </p>
                 )}
                 {!isCheckingSlug && slugAvailable === false && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-3 w-3" />
-                    Slug is already taken
+                    {cc.slugTaken}
                   </p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description (optional)</Label>
+                <Label htmlFor="description">{cc.description}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Brief description of your company..."
+                  placeholder={rq.companyDescPlaceholder}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
@@ -153,10 +157,10 @@ export default function RequestCompany() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Reason (optional)</Label>
+                <Label htmlFor="reason">{rq.reason}</Label>
                 <Textarea
                   id="reason"
-                  placeholder="Why do you need a company?"
+                  placeholder={rq.companyReasonPlaceholder}
                   value={formData.reason}
                   onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
                   rows={3}
@@ -167,7 +171,7 @@ export default function RequestCompany() {
                 <div className="flex gap-2">
                   <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Your request will be reviewed by an administrator. You'll be notified once it's approved.
+                    {rq.reviewNotice}
                   </p>
                 </div>
               </div>
@@ -175,10 +179,10 @@ export default function RequestCompany() {
               <div className="flex gap-3">
                 <Button type="submit" disabled={isLoading || !slugAvailable}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Submit Request
+                  {rq.submitRequest}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => navigate('/')}>
-                  Cancel
+                  {cc.cancel}
                 </Button>
               </div>
             </form>

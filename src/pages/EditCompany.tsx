@@ -137,7 +137,7 @@ export default function EditCompany() {
                 </Label>
                 <Input
                   id="name"
-                  placeholder="Acme Corporation"
+                  placeholder={ec.namePlaceholder}
                   {...form.register('name')}
                 />
                 {form.formState.errors.name && (
@@ -151,7 +151,7 @@ export default function EditCompany() {
                 </Label>
                 <Input
                   id="slug"
-                  placeholder="acme-corporation"
+                  placeholder={ec.slugPlaceholder}
                   {...form.register('slug')}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -167,7 +167,7 @@ export default function EditCompany() {
                 <Input
                   id="logo"
                   type="url"
-                  placeholder="https://example.com/logo.png"
+                  placeholder={ec.logoPlaceholder}
                   {...form.register('logo')}
                 />
                 {form.formState.errors.logo && (
@@ -179,7 +179,7 @@ export default function EditCompany() {
                 <Label htmlFor="description">{ec.description}</Label>
                 <Textarea
                   id="description"
-                  placeholder="Tell us about your company..."
+                  placeholder={ec.descriptionPlaceholder}
                   rows={4}
                   {...form.register('description')}
                 />

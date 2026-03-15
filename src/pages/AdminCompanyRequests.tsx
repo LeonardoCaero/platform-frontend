@@ -28,11 +28,14 @@ import { CompanyRequest, CompanyRequestStatus } from '@/types/company-requests.t
 import { Loader2, Eye, Search, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function AdminCompanyRequests() {
   const { isPlatformAdmin, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const ta = t.adminRequests;
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,8 +47,8 @@ export default function AdminCompanyRequests() {
     if (authLoading) return;
     if (!isPlatformAdmin) {
       toast({
-        title: 'Access Denied',
-        description: 'You do not have permission to access this page',
+        title: ta.accessDenied,
+        description: ta.accessDeniedDesc,
         variant: 'destructive',
       });
       navigate('/dashboard');
@@ -100,9 +103,9 @@ export default function AdminCompanyRequests() {
         <div className="flex items-center gap-3">
           <ShieldAlert className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">Admin Panel - Company Requests</h1>
+            <h1 className="text-3xl font-bold">{ta.panelCompanyTitle}</h1>
             <p className="mt-1 text-muted-foreground">
-              Review and manage all company creation requests
+              {ta.companySubtitle}
             </p>
           </div>
         </div>
@@ -111,14 +114,14 @@ export default function AdminCompanyRequests() {
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>All Requests</CardTitle>
-                <CardDescription>Review pending and completed requests</CardDescription>
+                <CardTitle>{ta.allRequestsTitle}</CardTitle>
+                <CardDescription>{ta.allRequestsDesc}</CardDescription>
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Search by name, email..."
+                    placeholder={ta.searchCompanyPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9 w-full sm:w-[250px]"
@@ -126,15 +129,15 @@ export default function AdminCompanyRequests() {
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={ta.filterStatusPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL">All Statuses</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="APPROVED">Approved</SelectItem>
-                    <SelectItem value="REJECTED">Rejected</SelectItem>
-                    <SelectItem value="COMPLETED">Completed</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="ALL">{ta.allStatuses}</SelectItem>
+                    <SelectItem value="PENDING">{t.requests.pending}</SelectItem>
+                    <SelectItem value="APPROVED">{t.requests.approved}</SelectItem>
+                    <SelectItem value="REJECTED">{t.requests.rejected}</SelectItem>
+                    <SelectItem value="COMPLETED">{ta.completed}</SelectItem>
+                    <SelectItem value="CANCELLED">{t.requests.cancelled}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -148,7 +151,7 @@ export default function AdminCompanyRequests() {
             ) : filteredRequests.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
-                  {searchTerm ? 'No requests match your search' : 'No requests found'}
+                  {searchTerm ? ta.noSearchMatch : ta.noRequests}
                 </p>
               </div>
             ) : (
@@ -156,13 +159,13 @@ export default function AdminCompanyRequests() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Company Name</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Submitted</TableHead>
-                      <TableHead>Reviewed</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{ta.colUser}</TableHead>
+                      <TableHead>{ta.colCompanyName}</TableHead>
+                      <TableHead>{ta.colSlug}</TableHead>
+                      <TableHead>{ta.colStatus}</TableHead>
+                      <TableHead>{ta.colSubmitted}</TableHead>
+                      <TableHead>{ta.colReviewed}</TableHead>
+                      <TableHead className="text-right">{ta.colActions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -170,7 +173,7 @@ export default function AdminCompanyRequests() {
                       <TableRow key={request.id}>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-sm">{request.user?.fullName || 'Unknown'}</p>
+                            <p className="font-medium text-sm">{request.user?.fullName || ta.unknown}</p>
                             <p className="text-xs text-muted-foreground">{request.user?.email || '-'}</p>
                           </div>
                         </TableCell>
@@ -193,7 +196,7 @@ export default function AdminCompanyRequests() {
                               onClick={() => handleReviewClick(request)}
                             >
                               <Eye className="mr-1 h-4 w-4" />
-                              Review
+                              {ta.review}
                             </Button>
                           ) : (
                             <Button
@@ -202,7 +205,7 @@ export default function AdminCompanyRequests() {
                               onClick={() => handleReviewClick(request)}
                             >
                               <Eye className="mr-1 h-4 w-4" />
-                              View
+                              {ta.review}
                             </Button>
                           )}
                         </TableCell>
