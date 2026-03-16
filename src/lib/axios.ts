@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { tokenStorage } from '@/lib/token-storage';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api',
@@ -10,7 +11,7 @@ const api = axios.create({
 // Request interceptor to add JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = tokenStorage.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,14 +28,14 @@ async function refreshAccessToken(): Promise<string> {
 
   refreshPromise = (async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = tokenStorage.getRefreshToken();
       if (!refreshToken) throw new Error('No refresh token');
 
       const response = await api.post('/auth/refresh', { refreshToken });
       const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-      localStorage.setItem('accessToken', accessToken);
+      tokenStorage.updateAccessToken(accessToken);
       if (newRefreshToken) {
-        localStorage.setItem('refreshToken', newRefreshToken);
+        tokenStorage.updateRefreshToken(newRefreshToken);
       }
       return accessToken;
     } finally {
@@ -67,8 +68,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         // Clear tokens and redirect to login only if not already on login page
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        tokenStorage.clear();
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }

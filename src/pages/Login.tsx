@@ -8,6 +8,7 @@ import { loginSchema, type LoginFormData } from '@/schemas/auth.schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LayoutDashboard } from 'lucide-react';
@@ -18,6 +19,7 @@ export default function Login() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const {
     register,
@@ -30,7 +32,7 @@ export default function Login() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, rememberMe);
       navigate('/');
     } catch (error: any) {
       toast({
@@ -80,6 +82,17 @@ export default function Login() {
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="rememberMe"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+                disabled={isLoading}
+              />
+              <Label htmlFor="rememberMe" className="cursor-pointer font-normal text-sm">
+                {t.auth.rememberMe}
+              </Label>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">

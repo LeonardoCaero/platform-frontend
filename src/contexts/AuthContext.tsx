@@ -3,6 +3,7 @@ import { User, authService, CompanyMembership } from '@/services/auth.service';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { tokenStorage } from '@/lib/token-storage';
 
 interface AuthContextType {
   user: User | null;
@@ -11,7 +12,7 @@ interface AuthContextType {
   isPlatformAdmin: boolean;
   companies: CompanyMembership[];
   selectedCompany: CompanyMembership | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (email: string, password: string, fullName: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = tokenStorage.getAccessToken();
       if (!token) {
         setUser(null);
         return;
@@ -108,8 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const status = error?.response?.status;
       if (status === 401 || status === 403) {
         setUser(null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
+        tokenStorage.clear();
       }
     }
   }, []);
@@ -123,10 +123,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe = true) => {
     const response = await authService.login({ email, password });
-    localStorage.setItem('accessToken', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
+    tokenStorage.setTokens(response.accessToken, response.refreshToken, rememberMe);
     
     await refreshUser();
     
@@ -138,8 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, fullName: string) => {
     const response = await authService.register({ email, password, fullName });
-    localStorage.setItem('accessToken', response.accessToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
+    tokenStorage.setTokens(response.accessToken, response.refreshToken, true);
     setUser(response.user);
     toast({
       title: t.auth.registerSuccess,
@@ -150,8 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setSelectedCompanyState(null);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    tokenStorage.clear();
     localStorage.removeItem('selectedCompanySlug');
     toast({
       title: t.auth.loggedOut,

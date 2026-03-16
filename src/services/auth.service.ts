@@ -1,5 +1,6 @@
 import api from '@/lib/axios';
 import type { ApiResponse } from '@/types/api.types';
+import { tokenStorage } from '@/lib/token-storage';
 
 export interface Permission {
   key: string;
@@ -66,10 +67,9 @@ export const authService = {
   },
 
   async logout(): Promise<void> {
-    const refreshToken = localStorage.getItem('refreshToken');
+    const refreshToken = tokenStorage.getRefreshToken();
     await api.post('/auth/logout', { refreshToken });
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    tokenStorage.clear();
   },
 
   async getMe(): Promise<User> {
