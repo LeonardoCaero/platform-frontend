@@ -9,6 +9,14 @@ export enum MemberStatus {
   SUSPENDED = 'SUSPENDED',
 }
 
+export enum ContractType {
+  EMPLOYEE = 'EMPLOYEE',
+  FREELANCE = 'FREELANCE',
+  INTERN = 'INTERN',
+  CONTRACTOR = 'CONTRACTOR',
+  OTHER = 'OTHER',
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -48,6 +56,7 @@ export interface CompanyMember {
   status: MemberStatus;
   position?: string;
   department?: string;
+  contractType: ContractType;
   invitedAt: string;
   activatedAt?: string | null;
   expiresAt?: string | null;
@@ -83,6 +92,7 @@ export interface InviteMemberDto {
   userId: string;
   position?: string;
   department?: string;
+  contractType?: ContractType;
 }
 
 export interface UserSearchResult {

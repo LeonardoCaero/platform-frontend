@@ -32,7 +32,6 @@ export interface User {
   fullName: string;
   phone?: string;
   avatar?: string;
-  emailVerified?: boolean;
   isPlatformAdmin?: boolean;
   globalPermissions?: Permission[];
   companies?: CompanyMembership[];
