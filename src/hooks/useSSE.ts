@@ -137,6 +137,10 @@ export function useSSE(enabled: boolean) {
           // ignore malformed payloads
         }
       });
+
+      es.addEventListener('reminder:count-changed', () => {
+        queryClient.invalidateQueries({ queryKey: ['upcoming-reminder-count'] });
+      });
       
       es.onerror = () => {
         es?.close();
